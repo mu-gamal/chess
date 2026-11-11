@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chess Crack</title>
+<style>
+:root{--bg:#0f1115;--card:#171a21;--line:#262b36;--text:#e6e8ee;--muted:#8b93a7;--accent:#d4a84b;--done:#4caf7a;--active:#d4a84b;--pending:#5a6273;--light:#eed9b5;--dark:#b58863}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI",Tahoma,sans-serif;line-height:1.7}
+.wrap{max-width:1320px;margin:0 auto;padding:32px 20px 60px}
+header{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:28px}
+h1{margin:0;font-size:28px;letter-spacing:.5px}
+h1 span{color:var(--accent)}
+.updated{color:var(--muted);font-size:14px}
+h2{font-size:19px;margin:36px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.numbers{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}.numbers .num{grid-column:span 2}.numbers .num:nth-child(n+4){grid-column:span 3}
+@media(max-width:820px){.numbers{grid-template-columns:1fr}.numbers .num,.numbers .num:nth-child(n+4){grid-column:auto}}
+.num .pct2{color:var(--accent);font-weight:400}
+.num .pct{color:var(--done);font-size:14px;font-weight:600;direction:ltr;margin-bottom:4px}
+.num{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.num .label{color:var(--muted);font-size:14px}
+.num .value{font-size:34px;font-weight:700;direction:ltr;margin:4px 0}
+.num .note{color:var(--muted);font-size:13px}
+.phases{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.phase{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.phase .n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--line)}
+.phase.done .n{background:var(--done);color:#0f1115}
+.phase.active .n{background:var(--active);color:#0f1115}
+.phase .t{font-weight:600}
+.phase .d{color:var(--muted);font-size:13px}
+.badge{font-size:12px;padding:3px 10px;border-radius:20px;border:1px solid}
+.done .badge{color:var(--done);border-color:var(--done)}
+.active .badge{color:var(--active);border-color:var(--active)}
+.pending .badge{color:var(--pending);border-color:var(--pending)}
+table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--line);border-radius:10px;font-size:14px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600}
+td:nth-child(4),td:nth-child(5){white-space:nowrap}
+.positions{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.pos{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.pos h3{margin:0 0 10px;font-size:16px}
+.board-wrap{direction:ltr;display:grid;grid-template-columns:22px 1fr;gap:4px}
+.evalbar{position:relative;background:#2b2b2b;border:2px solid #3a3f4b;border-radius:4px;overflow:hidden}
+.evalbar .w{position:absolute;left:0;right:0;bottom:0;background:#f2f2f2;transition:height .3s}
+.evalbar .v{position:absolute;left:0;right:0;font-size:9px;letter-spacing:-.3px;font-weight:700;text-align:center;font-family:ui-monospace,Menlo,monospace}
+.evalbar .v.top{top:4px;color:#f2f2f2}
+.evalbar .v.bot{bottom:4px;color:#222}
+.turn.win{border-color:#f2f2f2;color:#fff}
+.turn.win::before,.turn.loss::before{content:"";width:9px;height:9px;border-radius:50%;flex:none}
+.turn.win::before{background:#fff}
+.turn.loss::before{background:#000;border:1px solid #888}
+.turn.draw{border-color:#8b93a7;color:#a8afbf}
+.turn.loss{background:#111;border-color:#555;color:#eee}
+.evalinfo{color:var(--muted);font-size:13px;margin-top:8px;display:flex;flex-direction:column}
+.evalinfo .tb{color:var(--done);border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
+.ranks{display:grid;grid-template-rows:repeat(8,1fr);color:var(--muted);font-size:11px;text-align:center;align-items:center}
+.files{grid-column:2;display:grid;grid-template-columns:repeat(8,1fr);color:var(--muted);font-size:11px;text-align:center}
+.board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);aspect-ratio:1;border-radius:4px;overflow:hidden;border:2px solid #3a3f4b}
+.sq{display:grid;place-items:center;min-width:0;min-height:0;overflow:hidden;font-size:clamp(20px,4.2vw,34px);line-height:1;user-select:none}
+.sq.l{background:var(--light)}
+.sq.d{background:var(--dark)}
+.sq{position:relative}
+.crd{position:absolute;font-size:9px;font-weight:700;line-height:1;font-family:-apple-system,"Segoe UI",sans-serif;pointer-events:none;z-index:1}
+.crd.rk{top:2px;left:2px}
+.crd.fl{bottom:1px;right:2px}
+.sq.l .crd{color:var(--dark)}
+.sq.d .crd{color:var(--light)}
+.pc{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.turn{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:4px 12px 4px 8px;border-radius:20px;font-size:13px;font-weight:600;background:#232733;border:1px solid var(--accent);color:var(--text)}
+.turn .dot{width:12px;height:12px;border-radius:50%;border:1px solid #888}
+.turn .dot.w{background:#fff}
+.turn .dot.b{background:#111}
+.pos .note{font-size:14px;margin-top:10px}
+.evalinfo~.turn~.note{border-top:1px solid var(--line);padding-top:8px}
+details>summary{list-style:none;cursor:pointer;user-select:none}
+details>summary::-webkit-details-marker{display:none}
+details>summary h2{display:flex;align-items:center;gap:10px}
+details>summary h2::before{content:"▸";color:var(--accent);font-size:14px;transition:transform .15s}
+details[open]>summary h2::before{transform:rotate(90deg)}
+details>summary:hover h2{color:var(--accent)}
+details>summary h3{display:flex;align-items:center;gap:8px}
+details>summary h3::before{content:"▸";color:var(--accent);font-size:12px;transition:transform .15s}
+details[open]>summary h3::before{transform:rotate(90deg)}
+details>summary:hover h3{color:var(--accent)}
+.stg{font-size:17px;margin:22px 0 6px;color:var(--text)}
+details>summary h3.stg::before{font-size:13px}
+.stnotes{margin:6px 0 12px;padding-left:20px;color:var(--muted,#888);font-size:14px}.stnotes li{margin:3px 0}
+.olink{color:inherit;text-decoration:underline;text-underline-offset:3px}
+.lvlbox.empty .tscroll{display:none}
+.stagebody{padding-left:14px;border-left:2px solid var(--line);margin-left:4px}
+.lvltot{margin-left:auto;font-size:13px;font-weight:600;color:var(--text)}
+.cnt{color:var(--muted);font-weight:400}
+.pend td{color:var(--muted)}
+.pbadge{font-size:12px;padding:3px 10px;border-radius:20px;border:1px solid var(--pending);color:var(--muted);white-space:nowrap}
+.est{color:var(--muted);font-size:12px;margin-top:6px;white-space:nowrap}
+
+.eg{display:flex;align-items:center;gap:6px}
+.eg .side{display:inline-flex;gap:2px;padding:4px 6px;border-radius:8px}
+.eg .side.w{background:#eed9b5}
+.eg .side.b{background:#b58863}
+.egpc{width:28px;height:28px;display:block}
+.egp{display:flex;flex-direction:column;align-items:center;line-height:1}
+.egp i{font-style:normal;font-size:11px;font-weight:600;margin-top:2px;color:#0f1115}
+.eg .vs{color:var(--muted);font-size:12px}
+.egname{color:var(--muted);font-size:12px;margin-top:6px}
+.tscroll{border-radius:10px;border:1px solid var(--line)}
+.tscroll table{border:none}
+th{position:sticky;top:0;z-index:2;background:var(--card);box-shadow:inset 0 -1px 0 var(--line)}
+table.strat{table-layout:fixed;width:100%}
+.ex{display:block;width:100%;max-width:230px;color:inherit;text-decoration:none;cursor:pointer}
+.ex:hover .board{outline:2px solid var(--accent)}
+.ex+.ex{margin-top:14px}
+table.strat td{overflow-wrap:anywhere}
+table.strat td:nth-child(3){white-space:normal}
+table.strat td:nth-child(4){white-space:normal}
+.stagw{margin-top:10px}
+.stag{display:inline-block;font-size:11px;font-weight:600;padding:2px 10px;border-radius:20px;border:1px solid}
+.stag.ok{color:var(--done);border-color:var(--done);background:rgba(76,175,122,.12)}
+.stag.pend{color:#9a9a9a;border-color:#9a9a9a;background:rgba(154,154,154,.12)}
+.stag.wip{color:var(--active);border-color:var(--active);background:rgba(212,168,75,.12)}
+.rt{font-weight:600;color:var(--accent);margin-bottom:6px}
+.rsteps{margin:0;padding:0;list-style:none;counter-reset:s}
+.rsteps li{display:grid;grid-template-columns:22px 116px 1fr;gap:4px;margin:4px 0;counter-increment:s}
+.rsteps li::before{content:counter(s);color:var(--accent);font-weight:600}
+.rsteps li b{color:var(--text);white-space:nowrap}
+.rsteps li span{color:var(--muted)}
+.ralw{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+.ralh{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.ralw ul{margin:4px 0 0;padding-left:20px}
+.ralw li{color:var(--text)}
+.ralh{color:var(--muted)}
+.lvl{font-size:15px;color:var(--muted);margin:18px 0 8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+<h1>Chess <span>Crack</span></h1>
+<div class="updated" id="updated"></div>
+</header>
+<div id="app"></div>
+</div>
+<script src="pieces.js"></script>
+<script src="data.js"></script>
+<script src="evals.js"></script>
+<script>
+const ST={done:"Done",active:"In progress",pending:"Pending"};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function evalBar(e){
+  if(!e)return "";
+  let pct,txt;
+  if(e.mate!==undefined){pct=e.mate>0?100:0;txt="M"+Math.abs(e.mate)}
+  else if(Math.abs(e.cp)>=15000){pct=e.cp>0?100:0;txt="TB"}
+  else{pct=50+50*(2/(1+Math.exp(-0.004*e.cp))-1);txt=(Math.abs(e.cp)/100).toFixed(1)}
+  const whiteAhead=pct>=50;
+  return `<div class="evalbar"><div class="w" style="height:${pct}%"></div><div class="v ${whiteAhead?"bot":"top"}">${txt}</div></div>`;
+}
+function evalText(e,note){
+  if(!e)return "";
+  let s;
+  if(e.draw)s="Draw";
+  else if(e.mate!==undefined)s=(e.mate>0?"White":"Black")+" mates in "+Math.abs(e.mate);
+  else if(Math.abs(e.cp)>=15000)s=(e.cp>0?"White":"Black")+" wins (tablebase)";
+  else s=(e.cp>=0?"+":"")+(e.cp/100).toFixed(2);
+  const tb=e.tb?`<span class="tb">Syzygy: ${e.tb==="draw"?"Draw":e.tb==="win"?"White wins":"Black wins"} (guaranteed)${note?" — "+esc(note):""}</span>`:"";
+  return `<div class="evalinfo"><span>${e.depth?`Stockfish: ${s} · depth ${e.depth}`:`Our table: ${s}`}</span>${tb}</div>`;
+}
+function board(fen,note){
+  const rows=fen.split(" ")[0].split("/");
+  let h="";
+  rows.forEach((row,r)=>{
+    let f=0;
+    const cell=(inner)=>{const c=(r+f)%2?"d":"l";let lab="";if(f===0)lab+=`<span class="crd rk">${8-r}</span>`;if(r===7)lab+=`<span class="crd fl">${"abcdefgh"[f]}</span>`;h+=`<div class="sq ${c}">${inner}${lab}</div>`;f++};
+    for(const ch of row){
+      if(/\d/.test(ch)){for(let i=0;i<+ch;i++)cell("")}
+      else cell(`<img class="pc" src="${PIECES[ch]}" alt="${ch}">`)
+    }
+  });
+  const e=(window.EVALS||{})[fen];
+  return `<div class="board-wrap">${evalBar(e)}<div class="board">${h}</div></div>`;
+}
+function render(L){
+  document.getElementById("updated").textContent="Last updated: "+L.updated;
+  let h="";
+  const fmtBig=v=>{if(!/^[\d,]+$/.test(v))return v;const n=Number(v.replace(/,/g,""));if(n<1e6)return v;const e=Math.floor(Math.log10(n));return `${(n/10**e).toFixed(2)} × 10<sup>${e}</sup>`};
+  if(L.numbers?.length){
+    h+=`<details open><summary><h2>Position Counts</h2></summary><div class="numbers">`+L.numbers.map(n=>`<div class="num"><div class="label">${esc(n.label)}</div><div class="value" title="${/^[\d,]+$/.test(n.value)?n.value:""}">${fmtBig(n.value)}</div>${n.pct?`<div class="pct">${n.pct}</div>`:""}${n.note?`<div class="note">${n.note}</div>`:""}</div>`).join("")+`</div></details>`;
+  }
+  if(L.phases?.length){
+    h+=`<details><summary><h2>Phases <span class="cnt">(${L.phases.length})</span></h2></summary><ol class="phases">`+L.phases.map(p=>`<li class="phase ${p.status}"><div class="n">${p.n}</div><div><div class="t">${esc(p.title)}</div>${p.note?`<div class="d">${esc(p.note)}</div>`:""}</div><span class="badge">${ST[p.status]}</span></li>`).join("")+`</ol></details>`;
+  }
+  if(L.rules?.length){
+    const done=L.rules.filter(r=>r.status!=="pending").length, pend=L.rules.length-done;
+    const cnt=pend?`(${done} done · ${pend} pending)`:`(${done})`;
+    h+=`<details><summary><h2>Space Rules <span class="cnt">${cnt}</span></h2></summary><table><thead><tr><th>#</th><th>Rule</th><th>Why it is guaranteed</th><th>Impact</th><th>Date</th></tr></thead><tbody>`+L.rules.map((r,i)=>{
+      const p=r.status==="pending";
+      return `<tr class="${p?"pend":""}"><td>${i+1}</td><td>${esc(r.rule)}</td><td>${esc(r.why||"")}</td><td>${p?`<span class="pbadge">Pending</span>${r.est?`<div class="est">${esc(r.est)}</div>`:""}`:r.impact}</td><td>${p?"":esc(r.date)}</td></tr>`;
+    }).join("")+`</tbody></table></details>`;
+  }
+  const pcs=str=>[...(str||"")].map(c=>`<span class="egp"><img class="egpc" src="${PIECES[c]}" alt="${c}"><i>${c.toUpperCase()}</i></span>`).join("");
+  const egCell=r=>r.white?`<div class="eg"><span class="side w">${pcs(r.white)}</span><span class="vs">vs</span><span class="side b">${pcs(r.black)}</span></div>`:esc(r.endgame);
+  const exCell=fen=>{const e=(window.EVALS||{})[fen]||{};const t=e.draw?"Draw":e.mate!==undefined?`${e.mate>0?"White":"Black"} mates in ${Math.abs(e.mate)}`:"";return `<a class="ex" href="https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}" target="_blank" rel="noopener" title="Analyze on Chess.com">${board(fen)}${t?`<div class="turn ${e.draw?"draw":e.mate>0?"win":"loss"}">${t}</div>`:""}</a>`};
+  const RORD={"White wins":0,"Black wins":0,"Depends":1,"Draw":2,"White loses":3,"Black loses":3};
+  const stTag=st=>st==="proven"?`<span class="stag ok">✓ Solved</span>`:st==="pending"?`<span class="stag pend">Pending</span>`:`<span class="stag wip">In progress</span>`;
+  const ruleCell=x=>typeof x==="string"?esc(x):`<div class="rt">${esc(x.title)}</div><ol class="rsteps">${x.steps.map(([n,d])=>`<li><b>${esc(n)}</b><span>${/<(br|a )/.test(d)?d:esc(d)}</span></li>`).join("")}</ol>${x.always?.length?`<div class="ralw"><div class="ralh">Always</div><ul>${x.always.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`:""}`;
+  if(L.strategy?.length){
+    h+=`<details open><summary><h2>Strategy Rules <span class="cnt">(${L.strategy.reduce((a,g)=>a+g.items.length,0)})</span></h2></summary>`+[["Opening",L.opening||[]],["Middlegame",L.middlegame||[]]].map(([nm,its])=>`<details ${nm==="Opening"?"open":""} class="stage"><summary><h3 class="stg">${nm} <span class="cnt">(${its.length})</span></h3></summary>${its.length?`<div class="stagebody">${nm==="Opening"&&(L.openingNotes||[]).length?`<ul class="stnotes">${L.openingNotes.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}<div class="tscroll"><table class="strat" style="width:100%;min-width:0"><colgroup><col style="width:150px"><col style="width:120px"><col><col style="width:340px"></colgroup><thead><tr><th>Part</th><th>Status</th><th>Rule</th><th>Coverage</th></tr></thead><tbody>${its.map(r=>`<tr><td>${r.part||""}</td><td>${stTag(r.status)}</td><td>${ruleCell(r.rule)}</td><td>${r.coverage||""}</td></tr>`).join("")}</tbody></table></div></div>`:""}</details>`).join("")+`<details open class="stage"><summary><h3 class="stg">Endgame <span class="cnt">(${L.strategy.reduce((a,g)=>a+g.items.length,0)})</span></h3></summary><div class="stagebody">${(L.endgameNotes||[]).length?`<ul class="stnotes">${L.endgameNotes.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}`+L.strategy.map(g=>`<details ${g.collapsed?"":"open"} class="lvlbox${g.items.length?"":" empty"}"><summary><h3 class="lvl">${esc(g.level)} <span class="cnt">(${g.items.length})</span>${(()=>{const left=g.items.filter(i=>i.status!=="proven").length;return !g.items.length?`<span class="stag pend">Pending</span>`:left?`<span class="stag wip">${left} left</span>`:`<span class="stag ok">✓ Solved</span>`})()}${g.total?`<span class="lvltot">${esc(g.total)}</span>`:""}</h3></summary><div class="tscroll"><table class="strat"><colgroup><col style="width:16%"><col style="width:19%"><col style="width:39%"><col style="width:26%"></colgroup><thead><tr><th>Endgame</th><th>Example</th><th>Rule</th><th>Coverage</th></tr></thead><tbody>`+[...g.items].sort((x,y)=>(RORD[x.result]??9)-(RORD[y.result]??9)).map(r=>{
+      const p=r.status!=="proven";
+      return `<tr><td style="white-space:nowrap">${egCell(r)}<div class="stagw">${stTag(r.status)}</div></td><td>${(r.examples||[]).map(exCell).join("")}</td><td>${ruleCell(r.rule)}</td><td>${r.coverage||`<span class="pbadge">${r.status==="proposed"?"Proposed":"Pending"}</span>`}</td></tr>`;
+    }).join("")+`</tbody></table></div></details>`).join("")+`</div></details></details>`;
+  }
+
+  document.getElementById("app").innerHTML=h;
+}
+render(window.LOG);
+</script>
+</body>
+</html>

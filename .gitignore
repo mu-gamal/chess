@@ -1,0 +1,10 @@
+.DS_Store
+tablebases/
+engine/
+build/*
+!build/run5.sh
+!build/count5_results.txt
+*.o
+*.bak*
+*.v1
+*.v2
