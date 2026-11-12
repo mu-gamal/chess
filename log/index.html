@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chess Crack</title>
 <style>
-:root{--bg:#0f1115;--card:#171a21;--line:#262b36;--text:#e6e8ee;--muted:#8b93a7;--accent:#d4a84b;--done:#4caf7a;--active:#d4a84b;--pending:#5a6273;--light:#eed9b5;--dark:#b58863}
+:root{--bg:#433a52;--card:#4f455f;--line:#655a77;--text:#f0edf5;--muted:#b9b0c9;--accent:#d4a84b;--done:#4caf7a;--active:#d4a84b;--pending:#5a6273;--light:#eed9b5;--dark:#b58863}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI",Tahoma,sans-serif;line-height:1.7}
 .wrap{max-width:1320px;margin:0 auto;padding:32px 20px 60px}
@@ -23,7 +23,7 @@ h2{font-size:19px;margin:36px 0 14px;padding-bottom:8px;border-bottom:1px solid 
 .num .value{font-size:34px;font-weight:700;direction:ltr;margin:4px 0}
 .num .note{color:var(--muted);font-size:13px}
 .phases{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.phase{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.phase{display:grid;grid-template-columns:36px 1fr;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
 .phase .n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:700;background:var(--line)}
 .phase.done .n{background:var(--done);color:#0f1115}
 .phase.active .n{background:var(--active);color:#0f1115}
@@ -88,6 +88,10 @@ details>summary h3.stg::before{font-size:13px}
 .stnotes{margin:6px 0 12px;padding-left:20px;color:var(--muted,#888);font-size:14px}.stnotes li{margin:3px 0}
 .olink{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .lvlbox.empty .tscroll{display:none}
+.tdesc{color:#8a8f99;font-size:13px;margin-top:3px}
+.sub{margin:16px 0 8px;font-size:15px}
+.tgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}@media(max-width:820px){.tgrid{grid-template-columns:1fr}}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:14px}.plist{margin:0;padding-left:20px}.plist li{margin:4px 0}
 .stagebody{padding-left:14px;border-left:2px solid var(--line);margin-left:4px}
 .lvltot{margin-left:auto;font-size:13px;font-weight:600;color:var(--text)}
 .cnt{color:var(--muted);font-weight:400}
@@ -104,7 +108,7 @@ details>summary h3.stg::before{font-size:13px}
 .egp i{font-style:normal;font-size:11px;font-weight:600;margin-top:2px;color:#0f1115}
 .eg .vs{color:var(--muted);font-size:12px}
 .egname{color:var(--muted);font-size:12px;margin-top:6px}
-.tscroll{border-radius:10px;border:1px solid var(--line)}
+.tscroll{border-radius:10px;border:1px solid var(--line);overflow:clip}
 .tscroll table{border:none}
 th{position:sticky;top:0;z-index:2;background:var(--card);box-shadow:inset 0 -1px 0 var(--line)}
 table.strat{table-layout:fixed;width:100%}
@@ -125,12 +129,19 @@ table.strat td:nth-child(4){white-space:normal}
 .rsteps li::before{content:counter(s);color:var(--accent);font-weight:600}
 .rsteps li b{color:var(--text);white-space:nowrap}
 .rsteps li span{color:var(--muted)}
+.tsteps li{grid-template-columns:22px 150px 1fr;gap:10px}
 .ralw{margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
 .ralh{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 .ralw ul{margin:4px 0 0;padding-left:20px}
 .ralw li{color:var(--text)}
 .ralh{color:var(--muted)}
 .lvl{font-size:15px;color:var(--muted);margin:18px 0 8px}
+
+details>summary h2,details>summary h3.stg{font-size:19px;font-weight:700;color:var(--text);margin:36px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+details>summary h2::before,details>summary h3.stg::before{font-size:14px}
+details>summary:hover h2,details>summary:hover h3.stg{color:var(--accent)}
+
+.tabs{display:flex;gap:8px;margin:10px 0 4px}.tabs button{background:var(--card);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:8px 20px;font-size:15px;font-weight:600;cursor:pointer}.tabs button.on{color:var(--text);border-color:var(--accent);background:var(--line)}.tabpane{display:none}.tabpane.on{display:block}
 </style>
 </head>
 <body>
@@ -188,30 +199,36 @@ function render(L){
     h+=`<details open><summary><h2>Position Counts</h2></summary><div class="numbers">`+L.numbers.map(n=>`<div class="num"><div class="label">${esc(n.label)}</div><div class="value" title="${/^[\d,]+$/.test(n.value)?n.value:""}">${fmtBig(n.value)}</div>${n.pct?`<div class="pct">${n.pct}</div>`:""}${n.note?`<div class="note">${n.note}</div>`:""}</div>`).join("")+`</div></details>`;
   }
   if(L.phases?.length){
-    h+=`<details><summary><h2>Phases <span class="cnt">(${L.phases.length})</span></h2></summary><ol class="phases">`+L.phases.map(p=>`<li class="phase ${p.status}"><div class="n">${p.n}</div><div><div class="t">${esc(p.title)}</div>${p.note?`<div class="d">${esc(p.note)}</div>`:""}</div><span class="badge">${ST[p.status]}</span></li>`).join("")+`</ol></details>`;
+    h+=`<details><summary><h2>Phases <span class="cnt">(${L.phases.length})</span></h2></summary><ol class="phases">`+L.phases.map(p=>`<li class="phase ${p.status}"><div class="n">${p.n}</div><div><div class="t">${esc(p.title)}</div>${p.note?`<div class="d">${esc(p.note)}</div>`:""}</div></li>`).join("")+`</ol></details>`;
   }
   if(L.rules?.length){
     const done=L.rules.filter(r=>r.status!=="pending").length, pend=L.rules.length-done;
     const cnt=pend?`(${done} done · ${pend} pending)`:`(${done})`;
-    h+=`<details><summary><h2>Space Rules <span class="cnt">${cnt}</span></h2></summary><table><thead><tr><th>#</th><th>Rule</th><th>Why it is guaranteed</th><th>Impact</th><th>Date</th></tr></thead><tbody>`+L.rules.map((r,i)=>{
+    h+=`<details><summary><h2>Space Rules <span class="cnt">${cnt}</span></h2></summary><table><thead><tr><th>#</th><th>Rule</th><th>Why it is guaranteed</th><th>Impact</th></tr></thead><tbody>`+L.rules.map((r,i)=>{
       const p=r.status==="pending";
-      return `<tr class="${p?"pend":""}"><td>${i+1}</td><td>${esc(r.rule)}</td><td>${esc(r.why||"")}</td><td>${p?`<span class="pbadge">Pending</span>${r.est?`<div class="est">${esc(r.est)}</div>`:""}`:r.impact}</td><td>${p?"":esc(r.date)}</td></tr>`;
+      return `<tr class="${p?"pend":""}"><td>${i+1}</td><td>${esc(r.rule)}</td><td>${esc(r.why||"")}</td><td>${p?`<span class="pbadge">Pending</span>${r.est?`<div class="est">${esc(r.est)}</div>`:""}`:r.impact}</td></tr>`;
     }).join("")+`</tbody></table></details>`;
   }
   const pcs=str=>[...(str||"")].map(c=>`<span class="egp"><img class="egpc" src="${PIECES[c]}" alt="${c}"><i>${c.toUpperCase()}</i></span>`).join("");
   const egCell=r=>r.white?`<div class="eg"><span class="side w">${pcs(r.white)}</span><span class="vs">vs</span><span class="side b">${pcs(r.black)}</span></div>`:esc(r.endgame);
+  const secs=nm=>(L.sections||[]).filter(s=>s.stage===nm).map(s=>`<div class="stagebody">${s.title?`<h4 class="sub">${esc(s.title)}</h4>`:""}${s.type==="ex"?`<div class="tscroll"><table class="strat" style="width:100%;min-width:0"><colgroup><col><col style="width:230px"></colgroup><thead><tr><th>Position</th><th>Example</th></tr></thead><tbody>${s.items.map(([n,d,f,k])=>`<tr><td><b>${esc(n)}</b><div class="tdesc">${esc(d)}</div></td><td>${exCell(f)}<div class="tdesc">${f.split(" ")[1]==="w"?"White":"Black"} to move · ${esc(k)}</div></td></tr>`).join("")}</tbody></table></div>`:s.type==="chips"?`<div class="chips">${s.items.map(([n,u])=>u?`<a class="chip olink" target="_blank" href="${u}">${esc(n)}</a>`:`<span class="chip">${esc(n)}</span>`).join("")}</div>`:s.type==="ol"?`<ol class="rsteps tsteps">${s.items.map(([n,d])=>`<li><b>${esc(n)}</b><span>${esc(d)}</span></li>`).join("")}</ol>`:`<ul class="plist">${s.items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`}</div>`).join("");
   const exCell=fen=>{const e=(window.EVALS||{})[fen]||{};const t=e.draw?"Draw":e.mate!==undefined?`${e.mate>0?"White":"Black"} mates in ${Math.abs(e.mate)}`:"";return `<a class="ex" href="https://www.chess.com/analysis?fen=${encodeURIComponent(fen)}" target="_blank" rel="noopener" title="Analyze on Chess.com">${board(fen)}${t?`<div class="turn ${e.draw?"draw":e.mate>0?"win":"loss"}">${t}</div>`:""}</a>`};
   const RORD={"White wins":0,"Black wins":0,"Depends":1,"Draw":2,"White loses":3,"Black loses":3};
   const stTag=st=>st==="proven"?`<span class="stag ok">✓ Solved</span>`:st==="pending"?`<span class="stag pend">Pending</span>`:`<span class="stag wip">In progress</span>`;
   const ruleCell=x=>typeof x==="string"?esc(x):`<div class="rt">${esc(x.title)}</div><ol class="rsteps">${x.steps.map(([n,d])=>`<li><b>${esc(n)}</b><span>${/<(br|a )/.test(d)?d:esc(d)}</span></li>`).join("")}</ol>${x.always?.length?`<div class="ralw"><div class="ralh">Always</div><ul>${x.always.map(a=>`<li>${esc(a)}</li>`).join("")}</ul></div>`:""}`;
+  const research=h;h="";
   if(L.strategy?.length){
-    h+=`<details open><summary><h2>Strategy Rules <span class="cnt">(${L.strategy.reduce((a,g)=>a+g.items.length,0)})</span></h2></summary>`+[["Opening",L.opening||[]],["Middlegame",L.middlegame||[]]].map(([nm,its])=>`<details ${nm==="Opening"?"open":""} class="stage"><summary><h3 class="stg">${nm} <span class="cnt">(${its.length})</span></h3></summary>${its.length?`<div class="stagebody">${nm==="Opening"&&(L.openingNotes||[]).length?`<ul class="stnotes">${L.openingNotes.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}<div class="tscroll"><table class="strat" style="width:100%;min-width:0"><colgroup><col style="width:150px"><col style="width:120px"><col><col style="width:340px"></colgroup><thead><tr><th>Part</th><th>Status</th><th>Rule</th><th>Coverage</th></tr></thead><tbody>${its.map(r=>`<tr><td>${r.part||""}</td><td>${stTag(r.status)}</td><td>${ruleCell(r.rule)}</td><td>${r.coverage||""}</td></tr>`).join("")}</tbody></table></div></div>`:""}</details>`).join("")+`<details open class="stage"><summary><h3 class="stg">Endgame <span class="cnt">(${L.strategy.reduce((a,g)=>a+g.items.length,0)})</span></h3></summary><div class="stagebody">${(L.endgameNotes||[]).length?`<ul class="stnotes">${L.endgameNotes.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}`+L.strategy.map(g=>`<details ${g.collapsed?"":"open"} class="lvlbox${g.items.length?"":" empty"}"><summary><h3 class="lvl">${esc(g.level)} <span class="cnt">(${g.items.length})</span>${(()=>{const left=g.items.filter(i=>i.status!=="proven").length;return !g.items.length?`<span class="stag pend">Pending</span>`:left?`<span class="stag wip">${left} left</span>`:`<span class="stag ok">✓ Solved</span>`})()}${g.total?`<span class="lvltot">${esc(g.total)}</span>`:""}</h3></summary><div class="tscroll"><table class="strat"><colgroup><col style="width:16%"><col style="width:19%"><col style="width:39%"><col style="width:26%"></colgroup><thead><tr><th>Endgame</th><th>Example</th><th>Rule</th><th>Coverage</th></tr></thead><tbody>`+[...g.items].sort((x,y)=>(RORD[x.result]??9)-(RORD[y.result]??9)).map(r=>{
+    h+=`<div class="strwrap">`+[["Thinking Process",[]],["Opening",L.opening||[]],["Middlegame",L.middlegame||[]]].map(([nm,its])=>`<details ${nm==="Thinking Process"?"open":""} class="stage"><summary><h3 class="stg">${nm}${its.length?` <span class="cnt">(${its.length})</span>`:""}${nm==="Middlegame"&&L.middlegameTotal?`<span class="lvltot">${L.middlegameTotal}</span>`:""}</h3></summary>${(()=>{const nt=(nm==="Opening"?L.openingNotes:L.middlegameNotes)||[];return nt.length?`<div class="stagebody"><ul class="stnotes">${nt.map(x=>`<li>${x}</li>`).join("")}</ul></div>`:""})()}${secs(nm)}${nm==="Middlegame"?`<div class="tgrid">`+[its,L.middlegameExtra||[]].filter(a=>a.length).map((a,k)=>`<div class="stagebody"><h4 class="sub">${k?"More tactics":"Tactics"}</h4><div class="tscroll"><table class="strat" style="width:100%;min-width:0"><colgroup><col style="width:44px"><col><col style="width:230px"></colgroup><thead><tr><th>#</th><th>Tactic</th><th>Example</th></tr></thead><tbody>${a.map((r,i)=>`<tr><td>${i+1}</td><td><b>${r.link?`<a class="olink" target="_blank" href="${r.link}">${esc(r.tactic)}</a>`:esc(r.tactic)}</b>${r.desc?`<div class="tdesc">${esc(r.desc)}</div>`:""}</td><td>${r.fen?`${exCell(r.fen)}<div class="tdesc">${r.fen.split(" ")[1]==="w"?"White":"Black"} to move · Key: ${esc(r.key)}</div>`:""}</td></tr>`).join("")}</tbody></table></div></div>`).join("")+`</div>`:""}${nm!=="Middlegame"&&its.length?`<div class="stagebody"><div class="tscroll"><table class="strat" style="width:100%;min-width:0"><colgroup><col style="width:150px"><col style="width:120px"><col><col style="width:340px"></colgroup><thead><tr><th>Part</th><th>Status</th><th>Rule</th><th>Coverage</th></tr></thead><tbody>${its.map(r=>`<tr><td>${r.part||""}</td><td>${stTag(r.status)}</td><td>${ruleCell(r.rule)}</td><td>${r.coverage||""}</td></tr>`).join("")}</tbody></table></div></div>`:""}</details>`).join("")+`<details class="stage"><summary><h3 class="stg">Endgame <span class="cnt">(${L.strategy.reduce((a,g)=>a+g.items.length,0)})</span></h3></summary><div class="stagebody">${(L.endgameNotes||[]).length?`<ul class="stnotes">${L.endgameNotes.map(x=>`<li>${x}</li>`).join("")}</ul>`:""}${secs("Endgame")}`+L.strategy.map(g=>`<details class="lvlbox${g.items.length?"":" empty"}"><summary><h3 class="lvl">${esc(g.level)} <span class="cnt">(${g.items.length})</span>${(()=>{const left=g.items.filter(i=>i.status!=="proven").length;return !g.items.length?`<span class="stag pend">Pending</span>`:left?`<span class="stag wip">${left} left</span>`:`<span class="stag ok">✓ Solved</span>`})()}${g.total?`<span class="lvltot">${esc(g.total)}</span>`:""}</h3></summary><div class="tscroll"><table class="strat"><colgroup><col style="width:16%"><col style="width:19%"><col style="width:39%"><col style="width:26%"></colgroup><thead><tr><th>Endgame</th><th>Example</th><th>Rule</th><th>Coverage</th></tr></thead><tbody>`+[...g.items].sort((x,y)=>(RORD[x.result]??9)-(RORD[y.result]??9)).map(r=>{
       const p=r.status!=="proven";
       return `<tr><td style="white-space:nowrap">${egCell(r)}<div class="stagw">${stTag(r.status)}</div></td><td>${(r.examples||[]).map(exCell).join("")}</td><td>${ruleCell(r.rule)}</td><td>${r.coverage||`<span class="pbadge">${r.status==="proposed"?"Proposed":"Pending"}</span>`}</td></tr>`;
-    }).join("")+`</tbody></table></div></details>`).join("")+`</div></details></details>`;
+    }).join("")+`</tbody></table></div></details>`).join("")+`</div></details></div>`;
   }
 
-  document.getElementById("app").innerHTML=h;
+  let tab="training";try{tab=localStorage.getItem("cc_tab")||"training"}catch(e){}
+  document.getElementById("app").innerHTML=`<nav class="tabs"><button data-t="training">Training</button><button data-t="research">Research</button></nav><div class="tabpane" data-t="training">${h}</div><div class="tabpane" data-t="research">${research}</div>`;
+  const setTab=t=>{document.querySelectorAll(".tabs button,.tabpane").forEach(x=>x.classList.toggle("on",x.dataset.t===t));try{localStorage.setItem("cc_tab",t)}catch(e){}};
+  document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.t)));
+  setTab(tab);
 }
 render(window.LOG);
 </script>
