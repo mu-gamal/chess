@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chess</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%23433a52%22/%3E%3Ctext x=%2250%22 y=%2278%22 font-size=%2276%22 text-anchor=%22middle%22 fill=%22%23d4a84b%22%3E%E2%99%9E%3C/text%3E%3C/svg%3E">
+<link rel="icon" id="favicon" href="">
 <style>
 :root{--bg:#433a52;--card:#4f455f;--line:#655a77;--text:#f0edf5;--muted:#b9b0c9;--accent:#d4a84b;--done:#4caf7a;--active:#d4a84b;--pending:#5a6273;--light:#eed9b5;--dark:#b58863}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI",Tahoma,sans-serif;line-height:1.7}
 .wrap{max-width:1320px;margin:0 auto;padding:32px 20px 60px}
 header{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:28px}
-h1{margin:0;font-size:28px;letter-spacing:.5px}
+h1{margin:0;font-size:36px;letter-spacing:.5px;color:var(--accent)}
 h1 span{color:var(--accent)}
 .updated{color:var(--muted);font-size:14px}
 h2{font-size:19px;margin:36px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
@@ -142,7 +142,7 @@ details>summary h2,details>summary h3.stg{font-size:19px;font-weight:700;color:v
 details>summary h2::before,details>summary h3.stg::before{font-size:14px}
 details>summary:hover h2,details>summary:hover h3.stg{color:var(--accent)}
 
-.tabs{display:flex;gap:8px;margin:10px 0 4px}.tabs button{background:var(--card);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:8px 20px;font-size:15px;font-weight:600;cursor:pointer}.pwrap{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}.pwrap .plist{flex:1;min-width:200px}.pboard{width:230px;max-width:100%}.pboard .board-wrap{grid-template-columns:1fr}.tcnt{font-size:11px;font-weight:400;color:var(--muted);opacity:.7;margin-left:6px}.tabs button.on{color:var(--text);border-color:var(--accent);background:var(--line)}.tabpane{display:none}.tabpane.on{display:block}
+.tabs{display:flex;gap:8px;margin:10px 0 4px}.tabs button{background:var(--card);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:8px 20px;font-size:15px;font-weight:600;cursor:pointer}.pwrap{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}.pwrap .plist{flex:1;min-width:200px}.pboard{width:230px;max-width:100%}.pboard .board-wrap{grid-template-columns:1fr}.tabs button.tprog{background:linear-gradient(90deg,rgba(110,205,150,.5) var(--p),var(--card) var(--p))}.tabs button.tprog.on{background:linear-gradient(90deg,rgba(110,205,150,.65) var(--p),var(--line) var(--p))}.tcnt{font-size:11px;font-weight:400;color:var(--muted);opacity:.7;margin-left:6px}.tabs button.on{color:var(--text);border-color:var(--accent);background:var(--line)}.tabpane{display:none}.tabpane.on{display:block}
 
 .tcards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}@media(max-width:1100px){.tcards{grid-template-columns:repeat(3,1fr)}}@media(max-width:900px){.tcards{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.tcards{grid-template-columns:1fr}}.tcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}.tch{display:block}.tcn{color:var(--accent);font-weight:700}.tcb{max-width:260px}
 
@@ -152,13 +152,13 @@ html,body{overscroll-behavior:none}body{overflow-x:clip}
 
 .ck{color:#4caf7a;font-weight:800;margin-left:6px}.tcard.done{border-color:#4caf7a;box-shadow:0 0 0 1px #4caf7a inset}.chip.done{border-color:#4caf7a}tr.done td:first-child{box-shadow:inset 3px 0 0 #4caf7a}
 
-h1{display:flex;align-items:center;gap:12px}.logo{width:60px;height:60px;flex:none}.rpc{width:20px;height:20px;vertical-align:-4px;margin-right:4px}
+h1{display:flex;align-items:center;gap:6px}.logo{width:60px;height:60px;flex:none;transform:translateY(-6px)}.rpc{width:20px;height:20px;vertical-align:-4px;margin-right:4px}
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-<h1><svg class="logo" viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="20" fill="#433a52"/><text x="50" y="78" font-size="76" text-anchor="middle" fill="#d4a84b">♞</text></svg>Chess</h1>
+<h1><img class="logo" id="logo" alt="">Chess</h1>
 </header>
 <div id="app"></div>
 </div>
@@ -235,8 +235,8 @@ function render(L){
     }).join("")+`</tbody></table></div></details>`).join("")+`</div></details></div>`;
   }
 
-  let tab="training";try{tab=localStorage.getItem("cc_tab")||"training"}catch(e){}
-  document.getElementById("app").innerHTML=`<nav class="tabs"><button data-t="training">Training${(()=>{const k=[...new Set(["Thinking Process","Opening","Middlegame","Endgame"].flatMap(SK))];return `<span class="tcnt">${k.filter(M).length}/${k.length}</span>`})()}</button><button data-t="research">Research</button></nav><div class="tabpane" data-t="training">${h}</div><div class="tabpane" data-t="research">${research}</div>`;
+  document.getElementById("logo").src=PIECES.K;document.getElementById("favicon").href=PIECES.K;let tab="training";try{tab=localStorage.getItem("cc_tab")||"training"}catch(e){}
+  document.getElementById("app").innerHTML=`<nav class="tabs">${(()=>{const k=[...new Set(["Thinking Process","Opening","Middlegame","Endgame"].flatMap(SK))];const d=k.filter(M).length,pc=Math.round(d/k.length*1000)/10;return `<button data-t="training" class="tprog" style="--p:${pc}%">Training<span class="tcnt">${d}/${k.length} · ${pc}%</span></button>`})()}<button data-t="research">Research</button></nav><div class="tabpane" data-t="training">${h}</div><div class="tabpane" data-t="research">${research}</div>`;
   const setTab=t=>{document.querySelectorAll(".tabs button,.tabpane").forEach(x=>x.classList.toggle("on",x.dataset.t===t));try{localStorage.setItem("cc_tab",t)}catch(e){}};
   document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.t)));
   setTab(tab);
