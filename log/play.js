@@ -11,8 +11,8 @@ const STD="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 const st={game:new Chess(),user:"w",colorPick:"w",tc:"none",elo:1000,flip:false,sel:null,view:0,over:null,thinking:false,clock:{w:0,b:0},running:false,anal:null,analyzing:false,drag:null,promo:null,gen:0,phase:"setup",times:[],turnStart:0,startFen:STD,mode:"play",fcls:{},fTok:0,vars:[],cv:-1,ck:0,arrows:[],marks:{},arDown:null,rcAt:0};
 
 root.innerHTML=`<div class="pl-left"><div class="pl-wrap" id="plWrap"><div class="pl-eval" id="plEval"><div class="w"></div><div class="v"></div></div><div class="board pl-b" id="plB"></div><div class="pl-promo" id="plPromo"></div></div>
-<div class="pl-tools"><button id="plGear" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3.3h-4l-.3 2.6a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></button><button id="plFlip" title="Flip board"><svg viewBox="0 0 24 24"><path d="M7 3 3 7h3v9h2V7h3zM17 21l4-4h-3V8h-2v9h-3z"/></svg></button>
-<div class="pl-pop" id="plPop"><label><span>Sound</span><input type="checkbox" id="plSound"></label><label><span>Show legal moves</span><input type="checkbox" id="plLegal"></label><label><span>Evaluation bar</span><input type="checkbox" id="plEvalOn"></label><label><span>Wood board</span><input type="checkbox" id="plWood"></label><label><span>Move icons on board</span><input type="checkbox" id="plBadges"></label></div></div></div>
+<div class="pl-tools"><div class="pl-tbtn"><button id="plGear" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3.3h-4l-.3 2.6a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></button><button id="plFlip" title="Flip board"><svg viewBox="0 0 24 24"><path d="M7 3 3 7h3v9h2V7h3zM17 21l4-4h-3V8h-2v9h-3z"/></svg></button></div>
+<div class="pl-pop" id="plPop"><label><span>Sound</span><input type="checkbox" id="plSound"></label><label><span>Show legal moves</span><input type="checkbox" id="plLegal"></label><label><span>Evaluation bar</span><input type="checkbox" id="plEvalOn"></label><label><span>Wood board</span><input type="checkbox" id="plWood"></label><label><span>Move icons on board</span><input type="checkbox" id="plBadges"></label></div><div class="pl-cap" id="plCapT"></div><div class="pl-cap bot" id="plCapB"></div></div></div>
 <div class="pl-side" id="plSide">
 <div id="plSetup" class="pl-sec">
 <div class="pl-card"><div class="pl-lbl">Play as</div><div class="seg" id="plColor"><button data-v="w" class="on">White</button><button data-v="r">Random</button><button data-v="b">Black</button></div></div>
@@ -75,7 +75,7 @@ function render(){
     const cls=["sq",(r+f)%2?"d":"l"];
     if(lm&&(lm.from===s||lm.to===s))cls.push("last");
     if(st.sel===s&&A)cls.push("sel");
-    if(chk===s)cls.push("chk");
+    if(chk===s)cls.push("chk");if(st.marks[s])cls.push("mkd");
     if(p&&A&&(EX?p.color===A.turn():userTurn()&&p.color===st.user))cls.push("mv");
     const d=dests.get(s);
     let lab="";if(df===0)lab+=`<span class="crd rk">${s[1]}</span>`;if(dr===7)lab+=`<span class="crd fl">${s[0]}</span>`;
@@ -87,7 +87,14 @@ function render(){
   B.innerHTML=html+arrows([...(au?[au]:[]),...st.arrows]);
   if(st.anim){const an=st.anim,t=B.querySelector(`.sq[data-sq="${an.to}"] .pc`),fs=B.querySelector(`.sq[data-sq="${an.from}"]`),ts=B.querySelector(`.sq[data-sq="${an.to}"]`);if(t&&fs&&ts){const a=fs.getBoundingClientRect(),b=ts.getBoundingClientRect();t.style.transition="none";t.style.transform=`translate(${a.left-b.left}px,${a.top-b.top}px)`;t.style.zIndex=5;t.getBoundingClientRect();t.style.transition="transform .15s ease-out";t.style.transform=""}}st.anim=null;
   $("plWrap").classList.toggle("idle",st.phase==="setup");root.classList.toggle("setup",st.phase==="setup");$("plWrap").classList.toggle("side",st.cv>=0);  $("plSetup").style.display=st.phase==="setup"?"":"none";$("plGame").style.display=st.phase==="game"?"":"none";$("plClocks").style.display=st.tc==="none"||st.mode!=="play"?"none":"";
-  renderEval();renderMoves();renderClocks();renderStatus();renderAnal();
+  renderCaps(g);renderEval();renderMoves();renderClocks();renderStatus();renderAnal();
+}
+function renderCaps(g){
+  const V={p:1,n:3,b:3,r:5,q:9},cnt=gg=>{const c={w:{p:0,n:0,b:0,r:0,q:0},b:{p:0,n:0,b:0,r:0,q:0}};gg.board().forEach(r=>r.forEach(q=>{if(q&&q.type!=="k")c[q.color][q.type]++}));return c};
+  const s0=cnt(new Chess(st.startFen)),s1=cnt(g),mat={w:0,b:0};["w","b"].forEach(c=>Object.keys(V).forEach(t=>mat[c]+=s1[c][t]*V[t]));
+  const lost=c=>["q","r","b","n","p"].flatMap(t=>Array(Math.max(0,s0[c][t]-s1[c][t])).fill(t));
+  const box=(by)=>{const victim=by==="w"?"b":"w",d=mat[by]-mat[victim];const other=lost(by),used={};return lost(victim).map(t=>{const k=(used[t]=(used[t]||0)+1),hi=k>other.filter(x=>x===t).length;return `<img class="${victim==="b"?"bk":""}${hi?" up":""}" src="${PIECES[victim==="w"?t.toUpperCase():t]}" alt="">`}).join("")+(d>0?`<span class="cpd">+${d}</span>`:"")};
+  const top=st.flip?"w":"b",bot=st.flip?"b":"w";$("plCapT").innerHTML=st.phase==="setup"?"":box(top);$("plCapB").innerHTML=st.phase==="setup"?"":box(bot);
 }
 
 function arrows(list){
@@ -287,7 +294,8 @@ function step(d){
 function closePromo(){$("plPromo").classList.remove("on");st.promo=null}
 function showPromo(from,to){
   const el=$("plPromo");const c=(act()||st.game).turn();
-  el.innerHTML=["q","r","b","n"].map(p=>`<button data-p="${p}"><img src="${PIECES[c==="w"?p.toUpperCase():p]}" alt=""></button>`).join("");
+  const f=FILES.indexOf(to[0]),r=8-+to[1],col=st.flip?7-f:f,row=st.flip?7-r:r,dir=row===0?1:-1,wb=$("plWrap").getBoundingClientRect(),bb=B.getBoundingClientRect(),sq=bb.width/8;
+  el.innerHTML=["q","n","r","b"].map((p,k)=>`<button data-p="${p}" style="left:${bb.left-wb.left+col*sq}px;top:${bb.top-wb.top+(row+dir*k)*sq}px;width:${sq}px;height:${sq}px"><img src="${PIECES[c==="w"?p.toUpperCase():p]}" alt=""></button>`).join("");
   el.classList.add("on");st.promo={from,to};
   el.onclick=e=>{const b=e.target.closest("button");closePromo();if(!b){st.sel=null;render();return}tryMove(from,to,b.dataset.p)};
 }
@@ -295,7 +303,7 @@ function showPromo(from,to){
 async function maybeEngine(){
   if(st.mode!=="play"||st.over||st.game.turn()===st.user)return;
   st.thinking=true;renderStatus();
-  const gen=++st.gen;const eng=getPlay();await eng.ready;
+  const gen=++st.gen,t0=performance.now();const eng=getPlay();await eng.ready;
   if(gen!==st.gen)return;
   if(st.elo>=1320){eng.send("setoption name Skill Level value 20");eng.send("setoption name UCI_LimitStrength value true");eng.send("setoption name UCI_Elo value "+st.elo)}
   else{eng.send("setoption name UCI_LimitStrength value false");eng.send("setoption name Skill Level value "+Math.round((st.elo-1000)/320*4))}
@@ -306,6 +314,7 @@ async function maybeEngine(){
   if(gen!==st.gen)return;
   st.thinking=false;
   const u=l.split(" ")[1];if(!u||u==="(none)"){render();return}
+  {const wt=1000-(performance.now()-t0);if(wt>0){st.thinking=true;await new Promise(r=>setTimeout(r,wt));if(gen!==st.gen)return;st.thinking=false}}
   const mv=st.game.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]});
   applied(mv);
 }
@@ -538,10 +547,10 @@ const fit=()=>{
   const narrow=innerWidth<=900;
   const wrap=document.querySelector(".wrap"),pb=parseFloat(getComputedStyle(wrap).paddingBottom)||0;
   const top=L.getBoundingClientRect().top+(getComputedStyle(L).position==="sticky"?0:scrollY);
-  const avail=root.clientWidth-(narrow?0:300+12+25)-38;
+  const avail=root.clientWidth-(narrow?0:300+12+25)-72;
   let w=Math.floor(Math.min(avail,narrow?avail:innerHeight-top-pb-4));
-  w=Math.max(240,w);L.style.width=w+38+"px";requestAnimationFrame(()=>{const bw=B.getBoundingClientRect().width;B.style.setProperty("--bs",Math.round(bw/8*.42)+"px")});
-  if(!narrow&&st.phase!=="setup"){side.style.height=L.getBoundingClientRect().height+"px";const o=document.documentElement.scrollHeight-innerHeight;if(o>0){L.style.width=Math.max(240,w-o)+38+"px";side.style.height=L.getBoundingClientRect().height+"px"}}
+  w=Math.max(240,w);L.style.width=w+72+"px";requestAnimationFrame(()=>{const bw=B.getBoundingClientRect().width;B.style.setProperty("--bs",Math.round(bw/8*.42)+"px")});
+  if(!narrow&&st.phase!=="setup"){side.style.height=L.getBoundingClientRect().height+"px";const o=document.documentElement.scrollHeight-innerHeight;if(o>0){L.style.width=Math.max(240,w-o)+72+"px";side.style.height=L.getBoundingClientRect().height+"px"}}
   MV.scrollTop=mst;
 };
 addEventListener("resize",fit);
