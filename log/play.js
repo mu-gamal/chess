@@ -3,16 +3,16 @@ const {Chess}=window.ChessLib;
 const root=document.getElementById("play");
 if(!root)return;
 const TCS={"10+5":[600,5],"15+10":[900,10],"none":[0,0]};
-const DEF={sound:true,legal:true,evalbar:false,wood:false};
+const DEF={sound:true,legal:true,evalbar:false,wood:false,badges:true};
 const SET=(()=>{try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("cc_play")||"{}"))}catch(e){return {...DEF}}})();
 const saveSet=()=>{try{localStorage.setItem("cc_play",JSON.stringify(SET))}catch(e){}};
 const FILES="abcdefgh";
 const STD="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const st={game:new Chess(),user:"w",colorPick:"w",tc:"none",elo:1000,flip:false,sel:null,view:0,over:null,thinking:false,clock:{w:0,b:0},running:false,anal:null,analyzing:false,drag:null,promo:null,gen:0,phase:"setup",times:[],turnStart:0,startFen:STD,mode:"play",vars:[],cv:-1,ck:0,arrows:[],marks:{},arDown:null,rcAt:0};
+const st={game:new Chess(),user:"w",colorPick:"w",tc:"none",elo:1000,flip:false,sel:null,view:0,over:null,thinking:false,clock:{w:0,b:0},running:false,anal:null,analyzing:false,drag:null,promo:null,gen:0,phase:"setup",times:[],turnStart:0,startFen:STD,mode:"play",fcls:{},fTok:0,vars:[],cv:-1,ck:0,arrows:[],marks:{},arDown:null,rcAt:0};
 
 root.innerHTML=`<div class="pl-left"><div class="pl-wrap" id="plWrap"><div class="pl-eval" id="plEval"><div class="w"></div><div class="v"></div></div><div class="board pl-b" id="plB"></div><div class="pl-promo" id="plPromo"></div></div>
 <div class="pl-tools"><button id="plGear" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3.3h-4l-.3 2.6a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></button><button id="plFlip" title="Flip board"><svg viewBox="0 0 24 24"><path d="M7 3 3 7h3v9h2V7h3zM17 21l4-4h-3V8h-2v9h-3z"/></svg></button>
-<div class="pl-pop" id="plPop"><label><span>Sound</span><input type="checkbox" id="plSound"></label><label><span>Show legal moves</span><input type="checkbox" id="plLegal"></label><label><span>Evaluation bar</span><input type="checkbox" id="plEvalOn"></label><label><span>Wood board</span><input type="checkbox" id="plWood"></label></div></div></div>
+<div class="pl-pop" id="plPop"><label><span>Sound</span><input type="checkbox" id="plSound"></label><label><span>Show legal moves</span><input type="checkbox" id="plLegal"></label><label><span>Evaluation bar</span><input type="checkbox" id="plEvalOn"></label><label><span>Wood board</span><input type="checkbox" id="plWood"></label><label><span>Move icons on board</span><input type="checkbox" id="plBadges"></label></div></div></div>
 <div class="pl-side" id="plSide">
 <div id="plSetup" class="pl-sec">
 <div class="pl-card"><div class="pl-lbl">Play as</div><div class="seg" id="plColor"><button data-v="w" class="on">White</button><button data-v="r">Random</button><button data-v="b">Black</button></div></div>
@@ -57,7 +57,7 @@ const canEx=()=>st.phase==="game"&&!st.analyzing&&(st.mode==="fen"||!!(st.anal&&
 function curState(){if(st.cv<0)return {g:live()?st.game:fenAt(st.view),last:st.view>0?hist()[st.view-1]:null};
   const v=st.vars[st.cv],g=fenAt(v.base);let last=null;for(let k=0;k<st.ck;k++)last=g.move(v.moves[k]);return {g,last}}
 const act=()=>canEx()?curState().g:live()?st.game:null;
-const resetVars=()=>{st.vars=[];st.cv=-1;st.ck=0};
+const resetVars=()=>{st.vars=[];st.cv=-1;st.ck=0;st.fcls={};st.fTok=(st.fTok||0)+1};
 const userTurn=()=>st.phase==="game"&&!st.over&&(st.mode==="fen"||st.game.turn()===st.user)&&!st.thinking;
 const mine=p=>!!p&&(canEx()?p.color===act().turn():p.color===st.user);
 
@@ -80,8 +80,8 @@ function render(){
     const d=dests.get(s);
     let lab="";if(df===0)lab+=`<span class="crd rk">${s[1]}</span>`;if(dr===7)lab+=`<span class="crd fl">${s[0]}</span>`;
     const pc=p?`<img class="pc${st.drag&&st.drag.from===s?" ghosted":""}" draggable="false" src="${PIECES[p.color==="w"?p.type.toUpperCase():p.type]}" alt="">`:"";
-    const bc=st.cv<0&&lm&&lm.to===s&&st.anal&&st.anal.cls?st.anal.cls[st.view]:null;
-    html+=`<div class="${cls.join(" ")}" data-sq="${s}">${st.marks[s]?`<span class="mkq ${st.marks[s]}"></span>`:""}${pc}${d?`<span class="${p?"cap":"dot"}"></span>`:""}${bc?`<span class="sqb">${badge(bc)}</span>`:""}${lab}</div>`;
+    const bc=SET.badges&&st.cv<0&&lm&&lm.to===s?(st.mode==="fen"?st.fcls[st.view]||null:st.anal&&st.anal.cls?st.anal.cls[st.view]:null):null;
+    html+=`<div class="${cls.join(" ")}" data-sq="${s}">${st.marks[s]?`<span class="mkq ${st.marks[s]}"></span>`:""}${pc}${d?`<span class="${p?"cap":"dot"}"></span>`:""}${bc?`<span class="sqb">${badge(bc)}</span>`:""}${chk===s&&g.isCheckmate()?`<span class="sqb kmw"><span class="cb kmate"><svg viewBox="0 0 24 24"><g transform="rotate(180 12 12)" fill="#fff"><rect x="11" y="2.5" width="2" height="5.5" rx=".5"/><rect x="9" y="4" width="6" height="2" rx=".5"/><path d="M4.5 12.5C4.5 9.5 7.5 8.5 9.5 9.5L12 11l2.5-1.5c2-1 5 0 5 3 0 2-1.6 3.7-2.3 5H6.8c-.7-1.3-2.3-3-2.3-5Z"/><rect x="6" y="18.6" width="12" height="2.6" rx="1"/></g></svg></span></span>`:""}${lab}</div>`;
   }
   const lv=(st.mode==="fen"||st.cv>=0)&&LIVE[g.fen()],au=st.mode==="fen"||st.cv>=0?(lv&&lv.u):st.anal&&st.anal.done&&st.view>0&&st.anal.bestSan[st.view]&&st.anal.bestUci?st.anal.bestUci[st.view]:null;
   B.innerHTML=html+arrows([...(au?[au]:[]),...st.arrows]);
@@ -108,7 +108,7 @@ const LIVE={};let liveBusy=false,liveWant=null;
 async function liveEval(fen){liveWant=fen;if(liveBusy)return;liveBusy=true;const eng=getLive();await eng.ready;
   while(liveWant&&!(liveWant in LIVE)){const f=liveWant;const pos=new Chess(f);const sgn=pos.turn()==="w"?1:-1;
     if(pos.isCheckmate()){LIVE[f]={mate:0,cp:pos.turn()==="w"?-100000:100000};continue}if(pos.isDraw()){LIVE[f]={cp:0};continue}
-    eng.send("position fen "+f);eng.send("go depth 13");let last=null;const off=eng.on(l=>{if(l.startsWith("info")&&l.includes(" score ")&&!l.includes("bound"))last=l});const bl=await eng.wait(l=>l.startsWith("bestmove"));off();
+    eng.send("position fen "+f);eng.send("go depth 22 movetime 1500");let last=null;const off=eng.on(l=>{if(l.startsWith("info")&&l.includes(" score ")&&!l.includes("bound"))last=l});const bl=await eng.wait(l=>l.startsWith("bestmove"));off();
     const m=last&&last.match(/score (cp|mate) (-?\d+)/);LIVE[f]=m?(m[1]==="mate"?{mate:+m[2]*sgn,cp:(+m[2]>0?1:-1)*sgn*100000}:{cp:+m[2]*sgn}):{cp:0};const bu=bl.split(" ")[1];if(bu&&bu!=="(none)")LIVE[f].u=bu}
   liveBusy=false;(st.mode==="fen"||st.cv>=0)?render():renderEval()}
 function renderEval(){
@@ -126,12 +126,17 @@ function renderEval(){
 const BOOKI='<svg viewBox="0 0 18 19"><path opacity=".3" d="M9,.5a9,9,0,1,0,9,9A9,9,0,0,0,9,.5Z"/><path fill="#D5A47D" d="M9,0a9,9,0,1,0,9,9A9,9,0,0,0,9,0Z"/><path opacity=".3" d="M8.45,5.9c-1-.75-2.51-1.09-4.83-1.09H2.54v8.71H3.62a8.16,8.16,0,0,1,4.83,1.17Z"/><path opacity=".3" d="M9.54,14.69a8.14,8.14,0,0,1,4.84-1.17h1.08V4.81H14.38c-2.31,0-3.81.34-4.84,1.09Z"/><path fill="#fff" d="M8.45,5.4c-1-.75-2.51-1.09-4.83-1.09H3V13h.58a8.09,8.09,0,0,1,4.83,1.17Z"/><path fill="#fff" d="M9.54,14.19A8.14,8.14,0,0,1,14.38,13H15V4.31h-.58c-2.31,0-3.81.34-4.84,1.09Z"/></svg>';
 const GOODI='<svg viewBox="0 0 18 19"><path opacity=".3" d="M9,.5a9,9,0,1,0,9,9A9,9,0,0,0,9,.5Z"/><path fill="#95b776" d="M9,0a9,9,0,1,0,9,9A9,9,0,0,0,9,0Z"/><path opacity=".2" d="M15.11,6.81,9.45,12.47,7.79,14.13a.39.39,0,0,1-.28.11.39.39,0,0,1-.27-.11L2.89,9.78a.39.39,0,0,1-.11-.28.39.39,0,0,1,.11-.27L4.28,7.85a.34.34,0,0,1,.12-.09l.15,0a.37.37,0,0,1,.15,0,.38.38,0,0,1,.13.09l2.69,2.68,5.650-5.65a.38.38,0,0,1,.13-.09.37.37,0,0,1,.15,0,.4.4,0,0,1,.15,0,.34.34,0,0,1,.12.09l1.39,1.38a.41.41,0,0,1,.08.13.33.33,0,0,1,0,.15.4.4,0,0,1,0,.15A.5.5,0,0,1,15.11,6.81Z"/><path fill="#fff" d="M15.11,6.31,9.45,12,7.790,13.63a.39.39,0,0,1-.28.11.39.39,0,0,1-.27-.11L2.89,9.28A.39.39,0,0,1,2.78,9a.39.39,0,0,1,.11-.27L4.28,7.35a.34.34,0,0,1,.12-.09l.15,0a.37.37,0,0,1,.15,0,.38.38,0,0,1,.13.09L7.52,10l5.65-5.65a.38.38,0,0,1,.13-.09.37.37,0,0,1,.15,0,.4.4,0,0,1,.15,0,.34.34,0,0,1,.12.09l1.39,1.38a.41.41,0,0,1,.08.13.33.33,0,0,1,0,.15.4.4,0,0,1,0,.15A.5.5,0,0,1,15.11,6.31Z"/></svg>';
 const BESTI='<svg viewBox="0 0 18 19"><path opacity=".3" d="M9,.5a9,9,0,1,0,9,9A9,9,0,0,0,9,.5Z"/><path fill="#81B64C" d="M9,0a9,9,0,1,0,9,9A9,9,0,0,0,9,0Z"/><path opacity=".2" d="M9,3.43a.5.5,0,0,0-.27.08.46.46,0,0,0-.17.22L7.24,7.17l-3.68.19a.52.52,0,0,0-.26.1.53.53,0,0,0-.16.23.45.45,0,0,0,0,.28.44.44,0,0,0,.15.23l2.86,2.32-1,3.56a.45.45,0,0,0,0,.28.46.46,0,0,0,.17.22.41.41,0,0,0,.26.09.43.43,0,0,0,.27-.08l3.09-2,3.09,2a.46.46,0,0,0,.53,0,.46.46,0,0,0,.17-.22.53.53,0,0,0,0-.28l-1-3.56L14.71,8.2A.44.44,0,0,0,14.86,8a.45.45,0,0,0,0-.28.53.53,0,0,0-.16-.23.52.52,0,0,0-.26-.1l-3.68-.2L9.44,3.73a.46.46,0,0,0-.17-.22A.5.5,0,0,0,9,3.43Z"/><path fill="#fff" d="M9,2.93A.5.5,0,0,0,8.73,3a.46.46,0,0,0-.17.22L7.24,6.67l-3.68.19A.52.52,0,0,0,3.3,7a.53.53,0,0,0-.16.23.45.45,0,0,0,0,.28.44.44,0,0,0,.15.23L6.15,10l-1,3.56a.45.45,0,0,0,0,.28.46.46,0,0,0,.17.22.41.41,0,0,0,.26.09.43.43,0,0,0,.27-.08l3.09-2,3.09,2a.46.46,0,0,0,.53,0,.46.46,0,0,0,.17-.22.53.53,0,0,0,0-.28l-1-3.56L14.71,7.7a.44.44,0,0,0,.15-.23.45.45,0,0,0,0-.28A.53.53,0,0,0,14.7,7a.52.52,0,0,0-.26-.1l-3.68-.2L9.44,3.23A.46.46,0,0,0,9.27,3,.5.5,0,0,0,9,2.93Z"/></svg>';
-const badge=c=>c==="best"?`<span class="cb cb-svg">${BESTI}</span>`:c==="good"?`<span class="cb cb-svg">${GOODI}</span>`:c==="book"?`<span class="cb cb-svg">${BOOKI}</span>`:`<span class="cb cb-${c}">${MARK[c][0]}</span>`;
-const MARK={book:["","Book move"],best:["★","Best move"],good:["✓","Good move"],inacc:["?!","Inaccuracy"],miss:["✕","Miss"],blun:["??","Blunder"]};
+const BLUNI='<svg viewBox="0 0 18 19"><g><path opacity="0.3" d="M9,.5a9,9,0,1,0,9,9A9,9,0,0,0,9,.5Z"/><path fill="#FA412D" d="M9,0a9,9,0,1,0,9,9A9,9,0,0,0,9,0Z"/><g opacity="0.2"><path d="M14.74,5.45A2.58,2.58,0,0,0,14,4.54,3.76,3.76,0,0,0,12.89,4a4.07,4.07,0,0,0-1.2-.19A3.92,3.92,0,0,0,10.51,4a5.87,5.87,0,0,0-.9.37,3,3,0,0,0-.32.2,3.46,3.46,0,0,1,.42.63,3.29,3.29,0,0,1,.36,1.47.31.31,0,0,0,.19-.06l.11-.08a2.9,2.9,0,0,1,.29-.19,3.89,3.89,0,0,1,.41-.17,1.55,1.55,0,0,1,.48-.07,1.1,1.1,0,0,1,.72.24.72.72,0,0,1,.23.26.8.8,0,0,1,.07.34,1,1,0,0,1-.25.67,7.71,7.71,0,0,1-.65.63,6.2,6.2,0,0,0-.48.43,2.93,2.93,0,0,0-.45.54,2.55,2.55,0,0,0-.33.66,2.62,2.62,0,0,0-.13.83V11a.24.24,0,0,0,0,.12.35.35,0,0,0,.17.17l.12,0h1.71l.12,0a.23.23,0,0,0,.1-.07.21.21,0,0,0,.06-.1.27.27,0,0,0,0-.12V10.8a1,1,0,0,1,.26-.7q.27-.28.66-.63A5.79,5.79,0,0,0,14.05,9a4.51,4.51,0,0,0,.48-.6,2.56,2.56,0,0,0,.36-.72,2.81,2.81,0,0,0,.14-1A2.66,2.66,0,0,0,14.74,5.45Z"/><path d="M12.38,12.65H10.5l-.12,0a.34.34,0,0,0-.18.29v1.82a.36.36,0,0,0,.08.23.23.23,0,0,0,.1.07l.12,0h1.88a.24.24,0,0,0,.12,0,.26.26,0,0,0,.11-.07.36.36,0,0,0,.07-.1.28.28,0,0,0,0-.13V13a.27.27,0,0,0,0-.12.61.61,0,0,0-.07-.1A.32.32,0,0,0,12.38,12.65Z"/><path d="M6.79,12.65H4.91l-.12,0a.34.34,0,0,0-.18.29v1.82a.36.36,0,0,0,.08.23.23.23,0,0,0,.1.07l.12,0H6.79a.24.24,0,0,0,.12,0A.26.26,0,0,0,7,15a.36.36,0,0,0,.07-.1.28.28,0,0,0,0-.13V13a.27.27,0,0,0,0-.12.61.61,0,0,0-.07-.1A.32.32,0,0,0,6.79,12.65Z"/><path d="M8.39,4.54A3.76,3.76,0,0,0,7.3,4a4.07,4.07,0,0,0-1.2-.19A3.92,3.92,0,0,0,4.92,4a5.87,5.87,0,0,0-.9.37,3.37,3.37,0,0,0-.55.38l-.21.19a.32.32,0,0,0,0,.41l1,1.2a.26.26,0,0,0,.2.12.48.48,0,0,0,.24-.06l.11-.08a2.9,2.9,0,0,1,.29-.19l.4-.17A1.66,1.66,0,0,1,6,6.06a1.1,1.1,0,0,1,.72.24.72.72,0,0,1,.23.26A.77.77,0,0,1,7,6.9a1,1,0,0,1-.26.67,7.6,7.6,0,0,1-.64.63,6.28,6.28,0,0,0-.49.43,2.93,2.93,0,0,0-.45.54,2.72,2.72,0,0,0-.33.66,2.62,2.62,0,0,0-.13.83V11a.43.43,0,0,0,0,.12.39.39,0,0,0,.08.1.18.18,0,0,0,.1.07.21.21,0,0,0,.12,0H6.72l.12,0a.23.23,0,0,0,.1-.07.36.36,0,0,0,.07-.1A.5.5,0,0,0,7,11V10.8a1,1,0,0,1,.27-.7A8,8,0,0,1,8,9.47c.18-.15.35-.31.52-.48A7,7,0,0,0,9,8.39a3.23,3.23,0,0,0,.36-.72,3.07,3.07,0,0,0,.13-1,2.66,2.66,0,0,0-.29-1.27A2.58,2.58,0,0,0,8.39,4.54Z"/></g><g><path fill="#fff" d="M14.74,5A2.58,2.58,0,0,0,14,4a3.76,3.76,0,0,0-1.09-.56,4.07,4.07,0,0,0-1.2-.19,3.92,3.92,0,0,0-1.18.17,5.87,5.87,0,0,0-.9.37,3,3,0,0,0-.32.2,3.46,3.46,0,0,1,.42.63,3.29,3.29,0,0,1,.36,1.47.31.31,0,0,0,.19-.06L10.37,6a2.9,2.9,0,0,1,.29-.19,3.89,3.89,0,0,1,.41-.17,1.55,1.55,0,0,1,.48-.07,1.1,1.1,0,0,1,.72.24.72.72,0,0,1,.23.26.8.8,0,0,1,.07.34,1,1,0,0,1-.25.67,7.71,7.71,0,0,1-.65.63,6.2,6.2,0,0,0-.48.43,2.93,2.93,0,0,0-.45.54,2.55,2.55,0,0,0-.33.66,2.62,2.62,0,0,0-.13.83v.35a.24.24,0,0,0,0,.12.35.35,0,0,0,.17.17l.12,0h1.71l.12,0a.23.23,0,0,0,.1-.07.21.21,0,0,0,.06-.1.27.27,0,0,0,0-.12V10.3a1,1,0,0,1,.26-.7q.27-.28.66-.63a5.79,5.79,0,0,0,.51-.48,4.51,4.51,0,0,0,.48-.6,2.56,2.56,0,0,0,.36-.72,2.81,2.81,0,0,0,.14-1A2.66,2.66,0,0,0,14.74,5Z"/><path fill="#fff" d="M12.38,12.15H10.5l-.12,0a.34.34,0,0,0-.18.29v1.82a.36.36,0,0,0,.08.23.23.23,0,0,0,.1.07l.12,0h1.88a.24.24,0,0,0,.12,0,.26.26,0,0,0,.11-.07.36.36,0,0,0,.07-.1.28.28,0,0,0,0-.13V12.46a.27.27,0,0,0,0-.12.61.61,0,0,0-.07-.1A.32.32,0,0,0,12.38,12.15Z"/><path fill="#fff" d="M6.79,12.15H4.91l-.12,0a.34.34,0,0,0-.18.29v1.82a.36.36,0,0,0,.08.23.23.23,0,0,0,.1.07l.12,0H6.79a.24.24,0,0,0,.12,0A.26.26,0,0,0,7,14.51a.36.36,0,0,0,.07-.1.28.28,0,0,0,0-.13V12.46a.27.27,0,0,0,0-.12.61.61,0,0,0-.07-.1A.32.32,0,0,0,6.79,12.15Z"/><path fill="#fff" d="M8.39,4A3.76,3.76,0,0,0,7.3,3.48a4.07,4.07,0,0,0-1.2-.19,3.92,3.92,0,0,0-1.18.17,5.87,5.87,0,0,0-.9.37,3.37,3.37,0,0,0-.55.38l-.21.19a.32.32,0,0,0,0,.41l1,1.2a.26.26,0,0,0,.2.12.48.48,0,0,0,.24-.06L4.78,6a2.9,2.9,0,0,1,.29-.19l.4-.17A1.66,1.66,0,0,1,6,5.56a1.1,1.1,0,0,1,.72.24.72.72,0,0,1,.23.26A.77.77,0,0,1,7,6.4a1,1,0,0,1-.26.67,7.6,7.6,0,0,1-.64.63,6.28,6.28,0,0,0-.49.43,2.93,2.93,0,0,0-.45.54,2.72,2.72,0,0,0-.33.66,2.62,2.62,0,0,0-.13.83v.35a.43.43,0,0,0,0,.12.39.39,0,0,0,.08.1.18.18,0,0,0,.1.07.21.21,0,0,0,.12,0H6.72l.12,0a.23.23,0,0,0,.1-.07.36.36,0,0,0,.07-.1.5.5,0,0,0,0-.12V10.3a1,1,0,0,1,.27-.7A8,8,0,0,1,8,9c.18-.15.35-.31.52-.48A7,7,0,0,0,9,7.89a3.23,3.23,0,0,0,.36-.72,3.07,3.07,0,0,0,.13-1A2.66,2.66,0,0,0,9.15,5,2.58,2.58,0,0,0,8.39,4Z"/></g></g></svg>';
+const INACI='<svg viewBox="0 0 18 19"><g><path opacity="0.3" d="M9,.5a9,9,0,1,0,9,9A9,9,0,0,0,9,.5Z"/><path fill="#F7C631" d="M9,0a9,9,0,1,0,9,9A9,9,0,0,0,9,0Z"/><g opacity="0.2"><path d="M13.66,14.8a.28.28,0,0,1,0,.13.23.23,0,0,1-.08.11.28.28,0,0,1-.11.08l-.12,0h-2l-.13,0a.27.27,0,0,1-.1-.08A.36.36,0,0,1,11,14.8V12.9a.59.59,0,0,1,0-.13.36.36,0,0,1,.07-.1l.1-.08.13,0h2a.33.33,0,0,1,.23.1.39.39,0,0,1,.08.1.28.28,0,0,1,0,.13Zm-.12-3.93a.31.31,0,0,1,0,.13.3.3,0,0,1-.07.1.3.3,0,0,1-.23.08H11.43a.31.31,0,0,1-.34-.31L10.94,4.1A.5.5,0,0,1,11,3.86l.11-.08.13,0h2.11a.35.35,0,0,1,.26.1.41.41,0,0,1,.08.24Z"/><path d="M7.65,14.82a.27.27,0,0,1,0,.12.26.26,0,0,1-.07.11l-.1.07-.13,0H5.43a.25.25,0,0,1-.12,0,.27.27,0,0,1-.1-.08.31.31,0,0,1-.09-.22V13a.36.36,0,0,1,.09-.23l.1-.07.12,0H7.32a.32.32,0,0,1,.23.09.3.3,0,0,1,.07.1.28.28,0,0,1,0,.13Zm2.2-7.17a3.1,3.1,0,0,1-.36.73A5.58,5.58,0,0,1,9,9a4.85,4.85,0,0,1-.52.49,8,8,0,0,0-.65.63,1,1,0,0,0-.27.7V11a.21.21,0,0,1,0,.12.17.17,0,0,1-.06.1.23.23,0,0,1-.1.07l-.12,0H5.53a.21.21,0,0,1-.12,0,.18.18,0,0,1-.1-.07.2.2,0,0,1-.08-.1.37.37,0,0,1,0-.12v-.35a2.68,2.68,0,0,1,.13-.84,2.91,2.91,0,0,1,.33-.66,3.38,3.38,0,0,1,.45-.55c.16-.15.33-.29.49-.42a7.84,7.84,0,0,0,.65-.64,1,1,0,0,0,.25-.67.77.77,0,0,0-.07-.34.67.67,0,0,0-.23-.27A1.16,1.16,0,0,0,6.49,6,1.61,1.61,0,0,0,6,6.11a3,3,0,0,0-.41.18,1.75,1.75,0,0,0-.29.18l-.11.09A.5.5,0,0,1,5,6.62a.31.31,0,0,1-.21-.13l-1-1.21a.3.3,0,0,1,0-.4A1.36,1.36,0,0,1,4,4.68a3.07,3.07,0,0,1,.56-.38,5.49,5.49,0,0,1,.9-.37,3.69,3.69,0,0,1,1.19-.17,3.92,3.92,0,0,1,2.3.75,2.85,2.85,0,0,1,.77.92A2.82,2.82,0,0,1,10,6.71,3,3,0,0,1,9.85,7.65Z"/></g><g><path fill="#fff" d="M13.66,14.3a.28.28,0,0,1,0,.13.23.23,0,0,1-.08.11.28.28,0,0,1-.11.08l-.12,0h-2l-.13,0a.27.27,0,0,1-.1-.08A.36.36,0,0,1,11,14.3V12.4a.59.59,0,0,1,0-.13.36.36,0,0,1,.07-.1l.1-.08.13,0h2a.33.33,0,0,1,.23.1.39.39,0,0,1,.08.1.28.28,0,0,1,0,.13Zm-.12-3.93a.31.31,0,0,1,0,.13.3.3,0,0,1-.07.1.3.3,0,0,1-.23.08H11.43a.31.31,0,0,1-.34-.31L10.94,3.6A.5.5,0,0,1,11,3.36l.11-.08.13,0h2.11a.35.35,0,0,1,.26.1.41.41,0,0,1,.08.24Z"/><path fill="#fff" d="M7.65,14.32a.27.27,0,0,1,0,.12.26.26,0,0,1-.07.11l-.1.07-.13,0H5.43a.25.25,0,0,1-.12,0,.27.27,0,0,1-.1-.08.31.31,0,0,1-.09-.22V12.49a.36.36,0,0,1,.09-.23l.1-.07.12,0H7.32a.32.32,0,0,1,.23.09.3.3,0,0,1,.07.1.28.28,0,0,1,0,.13Zm2.2-7.17a3.1,3.1,0,0,1-.36.73,5.58,5.58,0,0,1-.49.6A4.85,4.85,0,0,1,8.48,9a8,8,0,0,0-.65.63,1,1,0,0,0-.27.7v.22a.21.21,0,0,1,0,.12.17.17,0,0,1-.06.1.23.23,0,0,1-.1.07l-.12,0H5.53a.21.21,0,0,1-.12,0,.18.18,0,0,1-.1-.07.2.2,0,0,1-.08-.1.37.37,0,0,1,0-.12v-.35a2.68,2.68,0,0,1,.13-.84,2.91,2.91,0,0,1,.33-.66,3.38,3.38,0,0,1,.45-.55c.16-.15.33-.29.49-.42a7.84,7.84,0,0,0,.65-.64,1,1,0,0,0,.25-.67.77.77,0,0,0-.07-.34.67.67,0,0,0-.23-.27,1.16,1.16,0,0,0-.72-.24A1.61,1.61,0,0,0,6,5.61a3,3,0,0,0-.41.18A1.75,1.75,0,0,0,5.3,6l-.11.09A.5.5,0,0,1,5,6.12.31.31,0,0,1,4.74,6l-1-1.21a.3.3,0,0,1,0-.4A1.36,1.36,0,0,1,4,4.18a3.07,3.07,0,0,1,.56-.38,5.49,5.49,0,0,1,.9-.37,3.69,3.69,0,0,1,1.19-.17A3.92,3.92,0,0,1,8.93,4a2.85,2.85,0,0,1,.77.92A2.82,2.82,0,0,1,10,6.21,3,3,0,0,1,9.85,7.15Z"/></g></g></svg>';
+const MISSI='<svg viewBox="0 0 18 19"><g><path opacity=".3" d="M9,.5C4.03,.5,0,4.53,0,9.5s4.03,9,9,9,9-4.03,9-9S13.97,.5,9,.5Z"/><path fill="#FF7769" d="M9,0C4.03,0,0,4.03,0,9s4.03,9,9,9,9-4.03,9-9S13.97,0,9,0Z"/><g opacity=".2"><path d="M13.99,12.51s.06,.08,.08,.13c.02,.05,.03,.1,.03,.15s-.01,.1-.03,.15c-.02,.05-.05,.09-.08,.13l-1.37,1.37s-.08,.06-.13,.08c-.05,.02-.1,.03-.15,.03s-.1-.01-.15-.03c-.05-.02-.09-.05-.13-.08l-3.06-3.06-3.06,3.06s-.08,.06-.13,.08c-.05,.02-.1,.03-.15,.03s-.1-.01-.15-.03c-.05-.02-.09-.05-.13-.08l-1.37-1.37c-.07-.07-.11-.17-.11-.28s.04-.2,.11-.28l3.06-3.06-3.06-3.06c-.07-.07-.11-.17-.11-.28s.04-.2,.11-.28l1.37-1.37c.07-.07,.17-.11,.28-.11s.2,.04,.28,.11l3.06,3.06,3.06-3.06c.07-.07,.17-.11,.28-.11s.2,.04,.28,.11l1.37,1.37s.06,.08,.08,.13c.02,.05,.03,.1,.03,.15s-.01,.1-.03,.15c-.02,.05-.05,.09-.08,.13l-3.06,3.06,3.06,3.06Z"/></g><path fill="#f1f2f2" d="M13.99,12.01s.06,.08,.08,.13c.02,.05,.03,.1,.03,.15s-.01,.1-.03,.15c-.02,.05-.05,.09-.08,.13l-1.37,1.37s-.08,.06-.13,.08c-.05,.02-.1,.03-.15,.03s-.1-.01-.15-.03c-.05-.02-.09-.05-.13-.08l-3.06-3.06-3.06,3.06s-.08,.06-.13,.08c-.05,.02-.1,.03-.15,.03s-.1-.01-.15-.03c-.05-.02-.09-.05-.13-.08l-1.37-1.37c-.07-.07-.11-.17-.11-.28s.04-.2,.11-.28l3.06-3.06-3.06-3.06c-.07-.07-.11-.17-.11-.28s.04-.2,.11-.28l1.37-1.37c.07-.07,.17-.11,.28-.11s.2,.04,.28,.11l3.06,3.06,3.06-3.06c.07-.07,.17-.11,.28-.11s.2,.04,.28,.11l1.37,1.37s.06,.08,.08,.13c.02,.05,.03,.1,.03,.15s-.01,.1-.03,.15c-.02,.05-.05,.09-.08,.13l-3.06,3.06,3.06,3.06Z"/></g></svg>';
+const BRILI='<svg viewBox="0 0 18 19"><path opacity=".3" d="M9,.5a9,9,0,1,0,9,9A9,9,0,0,0,9,.5Z"/><path fill="#26c2a3" d="M9,0a9,9,0,1,0,9,9A9,9,0,0,0,9,0Z"/><g opacity=".2"><path d="M12.57,14.6a.51.51,0,0,1,0,.13.44.44,0,0,1-.08.11l-.11.08-.13,0h-2l-.13,0L10,14.84A.41.41,0,0,1,10,14.6V12.7a.32.32,0,0,1,.09-.23.39.39,0,0,1,.1-.08l.13,0h2a.31.31,0,0,1,.24.1.39.39,0,0,1,.08.1.51.51,0,0,1,0,.13Zm-.12-3.93a.17.17,0,0,1,0,.12.41.41,0,0,1-.07.11.4.4,0,0,1-.23.08H10.35a.31.31,0,0,1-.34-.31L9.86,3.9A.36.36,0,0,1,10,3.66a.23.23,0,0,1,.11-.08.27.27,0,0,1,.13,0H12.3a.32.32,0,0,1,.25.1.36.36,0,0,1,.09.24Z"/><path d="M8.07,14.6a.51.51,0,0,1,0,.13.44.44,0,0,1-.08.11l-.11.08-.13,0h-2l-.13,0-.11-.08a.41.41,0,0,1-.08-.24V12.7a.27.27,0,0,1,0-.13.36.36,0,0,1,.07-.1.39.39,0,0,1,.1-.08l.13,0h2a.31.31,0,0,1,.24.1.39.39,0,0,1,.08.1.51.51,0,0,1,0,.13ZM8,10.67a.17.17,0,0,1,0,.12.41.41,0,0,1-.07.11.4.4,0,0,1-.23.08H5.85a.31.31,0,0,1-.34-.31L5.36,3.9a.36.36,0,0,1,.09-.24.23.23,0,0,1,.11-.08.27.27,0,0,1,.13,0H7.8a.35.35,0,0,1,.25.1.36.36,0,0,1,.09.24Z"/></g><path fill="#fff" d="M12.57,14.1a.51.51,0,0,1,0,.13.44.44,0,0,1-.08.11l-.11.08-.13,0h-2l-.13,0L10,14.34A.41.41,0,0,1,10,14.1V12.2A.32.32,0,0,1,10,12a.39.39,0,0,1,.1-.08l.13,0h2a.31.31,0,0,1,.24.1.39.39,0,0,1,.08.1.51.51,0,0,1,0,.13Zm-.12-3.93a.17.17,0,0,1,0,.12.41.41,0,0,1-.07.11.4.4,0,0,1-.23.08H10.35a.31.31,0,0,1-.34-.31L9.86,3.4A.36.36,0,0,1,10,3.16a.23.23,0,0,1,.11-.08.27.27,0,0,1,.13,0H12.3a.32.32,0,0,1,.25.1.36.36,0,0,1,.09.24Z"/><path fill="#fff" d="M8.07,14.1a.51.51,0,0,1,0,.13.44.44,0,0,1-.08.11l-.11.08-.13,0h-2l-.13,0-.11-.08a.41.41,0,0,1-.08-.24V12.2a.27.27,0,0,1,0-.13.36.36,0,0,1,.07-.1.39.39,0,0,1,.1-.08l.13,0h2A.31.31,0,0,1,8,12a.39.39,0,0,1,.08.1.51.51,0,0,1,0,.13ZM8,10.17a.17.17,0,0,1,0,.12.41.41,0,0,1-.07.11.4.4,0,0,1-.23.08H5.85a.31.31,0,0,1-.34-.31L5.36,3.4a.36.36,0,0,1,.09-.24.23.23,0,0,1,.11-.08.27.27,0,0,1,.13,0H7.8a.35.35,0,0,1,.25.1.36.36,0,0,1,.09.24Z"/></svg>';
+const GREATI='<svg viewBox="0 0 18 19"><path opacity=".3" d="M9,.5a9,9,0,1,0,9,9A9,9,0,0,0,9,.5Z"/><path fill="#749BBF" d="M9,0a9,9,0,1,0,9,9A9,9,0,0,0,9,0Z"/><path opacity=".2" d="M10.32,14.6a.27.27,0,0,1,0,.13.44.44,0,0,1-.08.11l-.11.08-.13,0H8l-.13,0-.11-.08a.41.41,0,0,1-.08-.24V12.7a.27.27,0,0,1,0-.13.36.36,0,0,1,.07-.1.39.39,0,0,1,.1-.08l.13,0h2a.31.31,0,0,1,.24.1.39.39,0,0,1,.08.1.51.51,0,0,1,0,.13Zm-.12-3.93a.17.17,0,0,1,0,.12.41.41,0,0,1-.07.11.4.4,0,0,1-.23.08H8.1a.31.31,0,0,1-.34-.31L7.61,3.9a.36.36,0,0,1,.09-.24.23.23,0,0,1,.11-.08.27.27,0,0,1,.13,0h2.11a.32.32,0,0,1,.25.1.36.36,0,0,1,.09.24Z"/><path fill="#fff" d="M10.32,14.1a.27.27,0,0,1,0,.13.44.44,0,0,1-.08.11l-.11.08-.13,0H8l-.13,0-.11-.08a.41.41,0,0,1-.08-.24V12.2a.27.27,0,0,1,0-.13.36.36,0,0,1,.07-.1.39.39,0,0,1,.1-.08l.13,0h2a.31.31,0,0,1,.24.1.39.39,0,0,1,.08.1.51.51,0,0,1,0,.13Zm-.12-3.93a.17.17,0,0,1,0,.12.41.41,0,0,1-.07.11.4.4,0,0,1-.23.08H8.1a.31.31,0,0,1-.34-.31L7.61,3.4a.36.36,0,0,1,.09-.24.23.23,0,0,1,.11-.08.27.27,0,0,1,.13,0h2.11a.32.32,0,0,1,.25.1.36.36,0,0,1,.09.24Z"/></svg>';
+const badge=c=>c==="bril"?`<span class="cb cb-svg">${BRILI}</span>`:c==="great"?`<span class="cb cb-svg">${GREATI}</span>`:c==="best"?`<span class="cb cb-svg">${BESTI}</span>`:c==="good"?`<span class="cb cb-svg">${GOODI}</span>`:c==="book"?`<span class="cb cb-svg">${BOOKI}</span>`:c==="blun"?`<span class="cb cb-svg">${BLUNI}</span>`:c==="inacc"?`<span class="cb cb-svg">${INACI}</span>`:c==="miss"?`<span class="cb cb-svg">${MISSI}</span>`:`<span class="cb cb-${c}">${MARK[c][0]}</span>`;
+const MARK={bril:["!!","Brilliant"],great:["!","Great move"],book:["","Book move"],best:["★","Best move"],good:["✓","Good move"],inacc:["?!","Inaccuracy"],miss:["✕","Miss"],blun:["??","Blunder"]};
 function renderMoves(){
   const h=hist();let html="";const mx=Math.max(1,...st.times.filter(x=>x!==undefined));
   const GL={w:{n:"♞",b:"♝",r:"♜",q:"♛",k:"♚"},b:{n:"♘",b:"♗",r:"♖",q:"♕",k:"♔"}};
-  const cell=j=>{if(j<0||j>=h.length)return `<span class="mvc empty"></span>`;const m=h[j];const c=st.anal&&st.anal.cls?st.anal.cls[j+1]:null;const isFig=m.piece!=="p"&&!m.san.startsWith("O-");const san=isFig?m.san.slice(1):m.san;const fig=isFig?`<span class="fig">${GL[m.color][m.piece]}</span>`:"";const show=c==="best"||c==="blun";
+  const cell=j=>{if(j<0||j>=h.length)return `<span class="mvc empty"></span>`;const m=h[j];const c=st.mode==="fen"?st.fcls[j+1]||null:st.anal&&st.anal.cls?st.anal.cls[j+1]:null;const isFig=m.piece!=="p"&&!m.san.startsWith("O-");const san=isFig?m.san.slice(1):m.san;const fig=isFig?`<span class="fig">${GL[m.color][m.piece]}</span>`:"";const show=c==="best"||c==="blun"||c==="bril"||c==="great";
     return `<span class="mvc${c?" t-"+c:""}" data-ply="${j+1}"><span class="cbs">${show?badge(c):""}</span><span class="mvx${st.cv<0&&st.view===j+1?" cur":""}">${fig}${san}</span></span>`};
   const tb=j=>{const t=st.times[j];if(j<0||j>=h.length||t===undefined)return `<span class="tb"></span>`;return `<span class="tb"><span class="tbw"><span class="tbar ${h[j].color}" style="width:${Math.max(4,Math.round(t/mx*100))}%"></span></span><span class="tv">${fmtT(t)}</span></span>`};
   const o=sOff(),n0=sNum();
@@ -171,9 +176,9 @@ function renderAnal(){
   const x=n?st.view/n*W:0;
   $("plGraph").innerHTML=`<polygon class="g-area" points="0,${H} ${line} ${W},${H}"/><line class="g-mid" x1="0" y1="${H/2}" x2="${W}" y2="${H/2}"/><polyline class="g-line" points="${line}"/><line class="g-cur" x1="${x}" y1="0" x2="${x}" y2="${H}"/><line class="g-hov" id="gHov" x1="0" y1="0" x2="0" y2="${H}" style="display:none"/>`;
   const c=a.cls[st.view],bm=a.bestSan[st.view];
-  $("plBest").innerHTML=st.view>0&&(c==="book"||c==="best")?`<span class="${c}">${MARK[c][1]}</span>`:st.view>0&&c?`<span class="${c}">${MARK[c][1]}</span>${bm?`, best was <b>${bm}</b>`:""}`:"";
-  const sum=(col,lab)=>{const cnt={best:0,good:0,inacc:0,miss:0,blun:0,book:0};for(let i=1;i<=n;i++){if(h[i-1].color===col&&a.cls[i])cnt[a.cls[i]]++}
-    return `<div>${lab}: <span class="best">${cnt.best} best</span> · <span class="good">${cnt.good} good</span> · <span class="inacc">${cnt.inacc} inaccuracies</span> · <span class="miss">${cnt.miss} misses</span> · <span class="blun">${cnt.blun} blunders</span></div>`};
+  $("plBest").innerHTML=st.view>0&&(c==="book"||c==="best"||c==="bril"||c==="great")?`<span class="${c}">${MARK[c][1]}</span>`:st.view>0&&c?`<span class="${c}">${MARK[c][1]}</span>${bm?`, best was <b>${bm}</b>`:""}`:"";
+  const sum=(col,lab)=>{const cnt={bril:0,great:0,best:0,good:0,inacc:0,miss:0,blun:0,book:0};for(let i=1;i<=n;i++){if(h[i-1].color===col&&a.cls[i])cnt[a.cls[i]]++}
+    return `<div>${lab}: ${cnt.bril?`<span class="bril">${cnt.bril} brilliant</span> · `:""}${cnt.great?`<span class="great">${cnt.great} great</span> · `:""}<span class="best">${cnt.best} best</span> · <span class="good">${cnt.good} good</span> · <span class="inacc">${cnt.inacc} inaccuracies</span> · <span class="miss">${cnt.miss} misses</span> · <span class="blun">${cnt.blun} blunders</span></div>`};
   $("plSum").innerHTML=st.mode==="pgn"?sum("w","White")+sum("b","Black"):sum(st.user,"You");
 }
 
@@ -239,7 +244,7 @@ if(kind==="start"){n(523.25,0,.35,.18);n(783.99,.12,.5,.16)}else{n(783.99,0,.4,.
 function synth(cap){if(!SET.sound)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime;const tone=(f,d,at,v)=>{const o=AC.createOscillator(),g=AC.createGain();o.type="triangle";o.frequency.value=f;g.gain.setValueAtTime(v,t+at);g.gain.exponentialRampToValueAtTime(.001,t+at+d);o.connect(g).connect(AC.destination);o.start(t+at);o.stop(t+at+d)};if(cap){tone(220,.09,0,.35);tone(160,.12,.05,.3)}else tone(420,.07,0,.25)}catch(e){}}
 function applied(mv){
   st.arrows=[];st.marks={};
-  if(st.mode!=="play"){if(!st.noAnim)st.anim=mv;st.noAnim=false;mvSnd(mv);st.view=hist().length;st.sel=null;render();return}
+  if(st.mode!=="play"){if(!st.noAnim)st.anim=mv;st.noAnim=false;mvSnd(mv);st.view=hist().length;st.sel=null;if(st.mode==="fen"){const ply=hist().length;liveClassify(ply,mv.before||fenAt(ply-1).fen(),mv.after||st.game.fen(),mv)}render();return}
   if(!st.noAnim)st.anim=mv;st.noAnim=false;
   mvSnd(mv);
   const nowT=performance.now();st.times[hist().length-1]=nowT-st.turnStart;st.turnStart=nowT;
@@ -334,16 +339,42 @@ function importGame(){
     if(ex&&ex.anal){const a={cls:ex.anal.cls,bestSan:ex.anal.bestSan,bestUci:ex.anal.bestUci,done:true};ex.anal.ev.forEach((e,i)=>a[i]=e);st.anal=a;render()}else{render();analyze()}}else{st.over=null;st.view=hist().length;render()}
 }
 
-async function evalPos(eng,fen,depth){
+async function evalPos(eng,fen,depth,mpv,tm){
   const pos=new Chess(fen);const stm=pos.turn(),sgn=stm==="w"?1:-1;
-  if(pos.isCheckmate())return {e:{mate:0,cp:stm==="w"?-100000:100000}};
-  if(pos.isDraw())return {e:{cp:0}};
-  eng.send("position fen "+fen);eng.send("go depth "+depth);
-  let last=null;const off=eng.on(l=>{if(l.startsWith("info")&&l.includes(" score ")&&!l.includes("bound"))last=l});
+  if(pos.isCheckmate())return {e:{mate:0,cp:stm==="w"?-100000:100000},lines:[]};
+  if(pos.isDraw())return {e:{cp:0},lines:[]};
+  mpv=Math.min(mpv||1,pos.moves().length);
+  eng.send("setoption name MultiPV value "+mpv);eng.send("position fen "+fen);eng.send("go depth "+depth+" movetime "+(tm||700));
+  const L=[];const off=eng.on(l=>{if(l.startsWith("info")&&l.includes(" score ")&&!l.includes("bound")){const k=+((l.match(/ multipv (\d+)/)||[0,1])[1]);L[k-1]=l}});
   const bl=await eng.wait(l=>l.startsWith("bestmove"));off();
-  const m=last&&last.match(/score (cp|mate) (-?\d+)/);let ev={cp:0};
-  if(m){const v=+m[2];ev=m[1]==="mate"?{mate:v*sgn,cp:(v>0?1:-1)*sgn*100000}:{cp:v*sgn}}
-  const u=bl.split(" ")[1];return {e:ev,u:u&&u!=="(none)"?u:null};
+  const pe=l=>{const m=l&&l.match(/score (cp|mate) (-?\d+)/);if(!m)return {cp:0};const v=+m[2];return m[1]==="mate"?{mate:v*sgn,cp:(v>0?1:-1)*sgn*100000}:{cp:v*sgn}};
+  const lines=L.filter(Boolean).map(l=>({e:pe(l),pv:((l.match(/ pv (.*)$/)||[0,""])[1]).split(" ").filter(Boolean)}));
+  const u=bl.split(" ")[1];return {e:lines[0]?lines[0].e:{cp:0},u:u&&u!=="(none)"?u:null,lines};
+}
+function classifyMove(o){
+  const cl=v=>Math.max(-1e5,Math.min(1e5,v)),wpm=(ev,c)=>{const w=winp(cl(ev.cp));return c==="w"?w:100-w};
+  const before=wpm(o.eB,o.mover),after=wpm(o.eA,o.mover),drop=before-after,isBest=o.best===o.played;
+  if(isBest||drop<2){
+    const VAL={p:1,n:3,b:3,r:5,q:9,k:0},mat=(fen,c)=>{let s=0;new Chess(fen).board().forEach(r=>r.forEach(q=>{if(q)s+=(q.color===c?1:-1)*VAL[q.type]}));return s};
+    let sac=false;try{const t=new Chess(o.fenA);(o.pvA||[]).slice(0,2).forEach(u=>t.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]}));sac=mat(o.fenB,o.mover)-mat(t.fen(),o.mover)>=2}catch(e){}
+    let forcing=false;try{const m=new Chess(o.fenB).move({from:o.played.slice(0,2),to:o.played.slice(2,4),promotion:o.played[4]});forcing=!!m.captured||/[+#]/.test(m.san)}catch(e){}
+    const hidden=!forcing&&!!(o.sh&&o.sh.length&&!o.sh.includes(o.played));
+    const easy=!!(o.l2&&o.l2.mate===undefined&&wpm(o.l2,o.mover)>=winp(500));
+    if(!easy&&after>=winp(-100)&&(sac||hidden))return "bril";
+    if(isBest&&o.l2&&before-wpm(o.l2,o.mover)>=20)return "great";
+  }
+  if(isBest)return "best";
+  const bad=drop>=25?"blun":drop>=10?"inacc":null;
+  return bad&&(o.prev==="blun"||o.prev==="miss")?"miss":bad||"good";
+}
+let fq=Promise.resolve();
+function liveClassify(ply,fenB,fenA,mv){
+  const BK=window.OPENINGS||{};if(fenA.split(" ").slice(0,4).join(" ") in BK){st.fcls[ply]="book";return}
+  const tok=st.fTok;
+  fq=fq.then(async()=>{if(tok!==st.fTok)return;const eng=getAnal();await eng.ready;eng.send("setoption name UCI_LimitStrength value false");
+    const b=await evalPos(eng,fenB,20,2),sh=await evalPos(eng,fenB,8,2,300),a=await evalPos(eng,fenA,20,1);if(tok!==st.fTok)return;
+    st.fcls[ply]=classifyMove({eB:b.e,eA:a.e,best:b.u,l2:b.lines[1]?b.lines[1].e:null,pvA:a.lines[0]?a.lines[0].pv:[],sh:sh.lines.map(x=>x.pv[0]),played:mv.from+mv.to+(mv.promotion||""),mover:mv.color,fenB,fenA,prev:st.fcls[ply-1]});
+    render()}).catch(()=>{});
 }
 async function analyze(){
   const h=hist();if(!h.length)return;resetVars();
@@ -355,17 +386,16 @@ async function analyze(){
   for(let i=0;i<=n;i++){
     if(ag!==st.analGen)return;
     st.analyzing=`Analyzing ${i}/${n}`;renderStatus();
-    const r=await evalPos(eng,fens[i],14);a[i]=r.e;const u=r.u;
+    const r=await evalPos(eng,fens[i],20,2);a[i]=r.e;const u=r.u;a.l2=a.l2||[];a.pv=a.pv||[];a.sh=a.sh||[];a.l2[i]=r.lines[1]?r.lines[1].e:null;a.pv[i]=r.lines[0]?r.lines[0].pv:[];
+    if(i<n){const s=await evalPos(eng,fens[i],8,2,300);a.sh[i+1]=s.lines.map(x=>x.pv[0])}
     if(u&&i<n){try{const t=new Chess(fens[i]);a.bestSan[i+1]=t.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]}).san;a.bestUci=a.bestUci||[];a.bestUci[i+1]=u}catch(e){}}
   }
   const BK=window.OPENINGS||{};let inBook=true;
   for(let i=1;i<=n;i++){
     if(inBook&&(fens[i].split(" ").slice(0,4).join(" ") in BK)){a.cls[i]="book";a.bestSan[i]=null;continue}inBook=false;
-    const mover=h[i-1].color;const wb=winp(Math.max(-1e5,Math.min(1e5,a[i-1].cp))),wa=winp(Math.max(-1e5,Math.min(1e5,a[i].cp)));
-    const drop=mover==="w"?wb-wa:wa-wb;const played=h[i-1].from+h[i-1].to+(h[i-1].promotion||"");
-    if(a.bestUci&&a.bestUci[i]===played){a.bestSan[i]=null;a.cls[i]="best";continue}
-    const bad=drop>=25?"blun":drop>=10?"inacc":null;
-    a.cls[i]=bad&&(a.cls[i-1]==="blun"||a.cls[i-1]==="miss")?"miss":bad||"good";
+    const played=h[i-1].from+h[i-1].to+(h[i-1].promotion||"");
+    a.cls[i]=classifyMove({eB:a[i-1],eA:a[i],best:a.bestUci&&a.bestUci[i],l2:a.l2[i-1],pvA:a.pv[i],sh:a.sh[i],played,mover:h[i-1].color,fenB:fens[i-1],fenA:fens[i],prev:a.cls[i-1]});
+    if(/^(bril|great|best)$/.test(a.cls[i]))a.bestSan[i]=null;
   }
   a.done=true;st.anal=a;st.analyzing=false;if(st.gid){const L=loadGames(),r=L.find(g=>g.id===st.gid);if(r){r.anal=packAnal(a);saveGames(L)}}render();
 }
@@ -431,7 +461,7 @@ const pop=$("plPop");$("plGear").addEventListener("click",e=>{e.stopPropagation(
 $("plSound").checked=SET.sound;$("plLegal").checked=SET.legal;
 $("plSound").addEventListener("change",e=>{SET.sound=e.target.checked;saveSet()});
 $("plLegal").addEventListener("change",e=>{SET.legal=e.target.checked;saveSet();render()});
-$("plWood").checked=SET.wood;$("plB").classList.toggle("wood",SET.wood);$("plWood").addEventListener("change",e=>{SET.wood=e.target.checked;saveSet();$("plB").classList.toggle("wood",SET.wood)});$("plEvalOn").checked=SET.evalbar;$("plEvalOn").addEventListener("change",e=>{SET.evalbar=e.target.checked;saveSet();render()});
+$("plBadges").checked=SET.badges;$("plBadges").addEventListener("change",e=>{SET.badges=e.target.checked;saveSet();render()});$("plWood").checked=SET.wood;$("plB").classList.toggle("wood",SET.wood);$("plWood").addEventListener("change",e=>{SET.wood=e.target.checked;saveSet();$("plB").classList.toggle("wood",SET.wood)});$("plEvalOn").checked=SET.evalbar;$("plEvalOn").addEventListener("change",e=>{SET.evalbar=e.target.checked;saveSet();render()});
 const rsB=$("plResign");
 const modal=$("plModal");rsB.addEventListener("click",e=>{e.stopPropagation();if(!st.over)modal.classList.toggle("on")});
 $("plMNo").addEventListener("click",()=>modal.classList.remove("on"));document.addEventListener("pointerdown",e=>{if(!e.target.closest(".pl-rsw"))modal.classList.remove("on")},true);
