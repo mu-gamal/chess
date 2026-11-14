@@ -116,7 +116,7 @@ function renderEval(){
   wrap.classList.toggle("haseval",show);
   if(!show)return;
   let e;if(st.anal&&st.cv<0)e=evalOf(st.view);else{const f=curState().g.fen();e=LIVE[f];if(!e)liveEval(f)}
-  const bar=$("plEval");bar.classList.toggle("flip",st.flip);
+  const bar=$("plEval");bar.classList.toggle("flip",st.flip);if(!e)return;
   let pct=50,txt="";
   if(e){if(e.mate!==undefined){pct=e.mate>0?100:e.mate<0?0:(e.cp>0?100:0);txt=e.mate===0?"#":"M"+Math.abs(e.mate)}else{pct=winp(e.cp);txt=(Math.abs(e.cp)/100).toFixed(1)}}
   bar.querySelector(".w").style.height=pct+"%";
