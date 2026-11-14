@@ -27,7 +27,7 @@ root.innerHTML=`<div class="pl-left"><div class="pl-wrap" id="plWrap"><div class
 <div class="pl-top"><div class="pl-status" id="plStatus"></div><span class="pl-lvl" id="plLvl"></span><button class="pl-btn" id="plCopy">Copy PGN</button><button class="pl-btn main pl-again" id="plAgainTop">New game</button><div class="pl-rsw"><button class="pl-btn" id="plResign">Resign</button><div class="pl-rpop" id="plModal"><div class="pl-mt">Resign this game?</div><div class="pl-mrow"><button class="pl-btn" id="plMNo">Cancel</button><button class="pl-btn danger" id="plMYes">Resign</button></div></div></div></div>
 <div class="pl-card pl-moves"><div class="pl-open" id="plOpen"></div><div class="pl-mv" id="plMoves"></div><div class="pl-nav"><button data-n="first" title="First"><svg viewBox="0 0 24 24"><path d="M18.4 6.4 17 5l-7 7 7 7 1.4-1.4L12.8 12zM11.4 6.4 10 5l-7 7 7 7 1.4-1.4L5.8 12z"/></svg></button><button data-n="prev" title="Previous"><svg viewBox="0 0 24 24"><path d="M15.4 6.4 14 5l-7 7 7 7 1.4-1.4L9.8 12z"/></svg></button><button data-n="next" title="Next"><svg viewBox="0 0 24 24"><path d="M8.6 17.6 10 19l7-7-7-7-1.4 1.4 5.6 5.6z"/></svg></button><button data-n="last" title="Last"><svg viewBox="0 0 24 24"><path d="M5.6 17.6 7 19l7-7-7-7-1.4 1.4 5.6 5.6zM12.6 17.6 14 19l7-7-7-7-1.4 1.4 5.6 5.6z"/></svg></button></div></div>
 <div class="pl-btns"><button class="pl-btn" id="plAnalyze">Analyze</button><button class="pl-btn main pl-again" id="plAgain">New game</button></div>
-<div class="pl-card pl-anal" id="plAnal"><svg id="plGraph" viewBox="0 0 300 70" preserveAspectRatio="none"></svg><div class="pl-tip" id="plTip"></div><div class="pl-best" id="plBest"></div><div class="pl-sum" id="plSum"></div></div>
+<div class="pl-card pl-anal" id="plAnal"><svg id="plGraph" viewBox="0 0 300 70" preserveAspectRatio="none"></svg><div class="pl-tip" id="plTip"></div><div class="pl-best" id="plBest"></div><div class="pl-exw" id="plExW"></div><div class="pl-sum" id="plSum"></div></div>
 </div>
 </div>`;
 
@@ -177,6 +177,7 @@ function renderAnal(){
   $("plGraph").innerHTML=`<polygon class="g-area" points="0,${H} ${line} ${W},${H}"/><line class="g-mid" x1="0" y1="${H/2}" x2="${W}" y2="${H/2}"/><polyline class="g-line" points="${line}"/><line class="g-cur" x1="${x}" y1="0" x2="${x}" y2="${H}"/><line class="g-hov" id="gHov" x1="0" y1="0" x2="0" y2="${H}" style="display:none"/>`;
   const c=a.cls[st.view],bm=a.bestSan[st.view];
   $("plBest").innerHTML=st.view>0&&(c==="book"||c==="best"||c==="bril"||c==="great")?`<span class="${c}">${MARK[c][1]}</span>`:st.view>0&&c?`<span class="${c}">${MARK[c][1]}</span>${bm?`, best was <b>${bm}</b>`:""}`:"";
+  renderExplain();
   const sum=(col,lab)=>{const cnt={bril:0,great:0,best:0,good:0,inacc:0,miss:0,blun:0,book:0};for(let i=1;i<=n;i++){if(h[i-1].color===col&&a.cls[i])cnt[a.cls[i]]++}
     return `<div>${lab}: ${cnt.bril?`<span class="bril">${cnt.bril} brilliant</span> · `:""}${cnt.great?`<span class="great">${cnt.great} great</span> · `:""}<span class="best">${cnt.best} best</span> · <span class="good">${cnt.good} good</span> · <span class="inacc">${cnt.inacc} inaccuracies</span> · <span class="miss">${cnt.miss} misses</span> · <span class="blun">${cnt.blun} blunders</span></div>`};
   $("plSum").innerHTML=st.mode==="pgn"?sum("w","White")+sum("b","Black"):sum(st.user,"You");
@@ -376,6 +377,66 @@ function liveClassify(ply,fenB,fenA,mv){
     st.fcls[ply]=classifyMove({eB:b.e,eA:a.e,best:b.u,l2:b.lines[1]?b.lines[1].e:null,pvA:a.lines[0]?a.lines[0].pv:[],sh:sh.lines.map(x=>x.pv[0]),played:mv.from+mv.to+(mv.promotion||""),mover:mv.color,fenB,fenA,prev:st.fcls[ply-1]});
     render()}).catch(()=>{});
 }
+const EXC={};let exForm=false;
+const gKey=()=>{try{return localStorage.getItem("cc_gemini_key")||""}catch(e){return ""}};
+function exCtx(){
+  const a=st.anal,i=st.view;if(!a||!a.done||st.cv>=0||i<1)return null;
+  const h=hist(),m=h[i-1],fb=fenAt(i-1).fen();return {a,i,m,fb,key:fb+"|"+m.san};
+}
+const sanLine=(fen,pv,n)=>{const t=new Chess(fen),o=[];for(const u of (pv||[]).slice(0,n)){try{const m=t.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]});o.push(m.san)}catch(e){break}}return o.join(" ")};
+const evTxt=e=>!e?"unknown":e.mate!==undefined?(e.mate===0?"checkmate":(e.mate>0?"White":"Black")+" mates in "+Math.abs(e.mate)):(e.cp>=0?"+":"")+(e.cp/100).toFixed(2)+" (from White's view)";
+function renderExplain(){
+  const w=$("plExW"),c=exCtx();if(!w)return;if(!c){w.innerHTML="";return}
+  const r=EXC[c.key];
+  if(exForm&&!gKey()){w.innerHTML=`<div class="ex-k"><input class="pl-in" id="exKey" type="password" placeholder="Gemini API key" spellcheck="false"><button class="pl-btn" id="exSave">Save</button></div><a class="ex-l" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a free key from Google AI Studio</a>`;return}
+  if(!r){w.innerHTML=`<button class="pl-btn ex-b" id="exGo">Explain</button>`;return}
+  if(r.loading){w.innerHTML=`<div class="ex-t ex-m">Thinking…</div>`;return}
+  if(r.err){w.innerHTML=`<div class="ex-t ex-e">${esc(r.err)}</div><button class="pl-btn ex-b" id="exGo">Try again</button>${/key/i.test(r.err)?`<button class="pl-btn ex-b" id="exForget">Change key</button>`:""}`;return}
+  w.innerHTML=`<div class="ex-t">${esc(r.text).replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/\n+/g,"<br>")}</div>`;
+}
+async function gemini(prompt){
+  const call=async model=>{const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{method:"POST",headers:{"Content-Type":"application/json","x-goog-api-key":gKey()},body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:.2,maxOutputTokens:200}})});return r};
+  let r=await call("gemini-3.5-flash-lite");
+  if(r.status===400||r.status===401||r.status===403)throw new Error("Invalid API key");
+  if(r.status===429)throw new Error("Free limit reached, try again in a minute");
+  if(!r.ok)throw new Error("Gemini error "+r.status);
+  const j=await r.json(),t=(((j.candidates||[])[0]||{}).content||{}).parts;const txt=(t||[]).map(x=>x.text||"").join("").trim();if(!txt)throw new Error("Empty answer, try again");return txt;
+}
+async function explain(){
+  const c=exCtx();if(!c)return;if(!gKey()){exForm=true;renderExplain();return}
+  const {a,i,m,fb,key}=c,mover=m.color==="w"?"White":"Black",opp=m.color==="w"?"Black":"White",cls=a.cls[i],best=a.bestUci&&a.bestUci[i];
+  const played=m.from+m.to+(m.promotion||""),playedIsBest=best===played,fa=fenAt(i).fen();
+  EXC[key]={loading:true};renderExplain();
+  try{
+    const eng=getAnal();await eng.ready;eng.send("setoption name UCI_LimitStrength value false");
+    const rb=await evalPos(eng,fb,20,1,1500),ra=await evalPos(eng,fa,20,1,1500);
+    const pvB=(rb.lines[0]&&rb.lines[0].pv)||[],pvA=(ra.lines[0]&&ra.lines[0].pv)||[];
+    const VAL={p:1,n:3,b:3,r:5,q:9,k:0},NM={p:"pawn",n:"knight",b:"bishop",r:"rook",q:"queen"};
+    const run=(fen,pv,n)=>{const t=new Chess(fen),san=[],caps=[];for(const u of pv.slice(0,n)){let mv;try{mv=t.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]})}catch(e){break}san.push(mv.san);if(mv.captured)caps.push(`${mv.color==="w"?"White":"Black"} takes ${NM[mv.captured]} (${mv.san})`)}
+      let s=0;t.board().forEach(r=>r.forEach(q=>{if(q)s+=(q.color===m.color?1:-1)*VAL[q.type]}));return {san:san.join(" "),caps,mat:s,mate:t.isCheckmate()}};
+    const mat0=(()=>{let s=0;new Chess(fb).board().forEach(r=>r.forEach(q=>{if(q)s+=(q.color===m.color?1:-1)*VAL[q.type]}));return s})();
+    const LA=run(fa,pvA,6),LB=run(fb,pvB,6);
+    const sw=d=>d===0?"material stays even":d>0?`${mover} ends up ${d} pawn-units ahead of the start`:`${mover} ends up ${-d} pawn-units behind the start`;
+    const facts=[`${mover} played ${m.san} (${MARK[cls]?MARK[cls][1]:cls}).`,
+      `Line after ${m.san}: ${m.san} ${LA.san}${LA.mate?" (checkmate)":""}. Captures: ${LA.caps.join("; ")||"none"}. Result: ${sw(LA.mat-mat0)}.`,
+      playedIsBest?"":`Best was ${(new Chess(fb)).move({from:best.slice(0,2),to:best.slice(2,4),promotion:best[4]}).san}. Line: ${LB.san}${LB.mate?" (checkmate)":""}. Captures: ${LB.caps.join("; ")||"none"}. Result: ${sw(LB.mat-mat0)}.`,
+      `Eval before: ${evTxt(rb.e)}. Eval after: ${evTxt(ra.e)}.`].filter(Boolean).join("\n");
+    const prompt=`Chess coach. Explain the move in at most 2 short sentences, under 35 words total.
+Rules:
+- Be concrete: name the key reply and what it wins or threatens, using the given lines and captures (e.g. "after hxg5, Qxg5 attacks the knight on g4 and wins it").
+- ${playedIsBest?"Say what the move achieves.":`Say what ${m.san} allows, then what the best move does instead.`}
+- No evaluation numbers, no adjectives like "massive" or "terrible", no filler, never comment on missing information.
+- Only use facts from the lines below. Standard algebraic notation. Plain text.
+
+${facts}`;
+    EXC[key]={text:await gemini(prompt)}
+  }catch(e){EXC[key]={err:e.message||"Failed"}}
+  renderExplain();
+}
+$("plExW").addEventListener("click",e=>{const id=e.target.id;
+  if(id==="exGo"){const c=exCtx();if(c)delete EXC[c.key];explain()}
+  else if(id==="exSave"){const v=$("exKey").value.trim();if(!v)return;try{localStorage.setItem("cc_gemini_key",v)}catch(er){}exForm=false;explain()}
+  else if(id==="exForget"){try{localStorage.removeItem("cc_gemini_key")}catch(er){}const c=exCtx();if(c)delete EXC[c.key];exForm=true;renderExplain()}});
 async function analyze(){
   const h=hist();if(!h.length)return;resetVars();
   const ag=st.analGen=(st.analGen||0)+1;
