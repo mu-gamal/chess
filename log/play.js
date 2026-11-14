@@ -19,14 +19,14 @@ root.innerHTML=`<div class="pl-left"><div class="pl-wrap" id="plWrap"><div class
 <div class="pl-card"><div class="pl-lbl">Time control</div><div class="seg" id="plTc"><button data-v="none" class="on">No clock</button><button data-v="10+5">10+5</button><button data-v="15+10">15+10</button></div></div>
 <div class="pl-card"><div class="pl-lbl">Engine strength <span id="plElo">1000</span></div><input type="range" id="plStr" min="1000" max="3100" step="100" value="1000"><div class="pl-ticks"><span>1000</span><span class="pl-lw" id="plLw"></span><span>3100</span></div></div>
 <button class="pl-btn main" id="plNew">Start game</button>
+<div class="pl-card" id="plAnaCard"><div class="pl-lbl">Analyze</div><textarea class="pl-in" id="plImp" rows="3" spellcheck="false" placeholder="Paste PGN or FEN"></textarea><div class="pl-err" id="plImpErr"></div><button class="pl-btn" id="plImpGo">Analyze</button></div>
 <div class="pl-card" id="plSaved"><div class="pl-lbl">Saved games</div><div class="pl-glist" id="plGList"></div></div>
-<div class="pl-card"><div class="pl-lbl">Analyze</div><textarea class="pl-in" id="plImp" rows="3" spellcheck="false" placeholder="Paste PGN or FEN"></textarea><div class="pl-err" id="plImpErr"></div><button class="pl-btn" id="plImpGo">Analyze</button></div>
 </div>
 <div id="plGame" class="pl-sec">
 <div class="pl-clocks" id="plClocks"><div class="pl-clock" id="plClkTop"><span class="n"></span><span class="t"></span></div><div class="pl-clock" id="plClkBot"><span class="n"></span><span class="t"></span></div></div>
-<div class="pl-top"><div class="pl-status" id="plStatus"></div><span class="pl-lvl" id="plLvl"></span><button class="pl-btn main pl-again" id="plAgainTop">New game</button><div class="pl-rsw"><button class="pl-btn" id="plResign">Resign</button><div class="pl-rpop" id="plModal"><div class="pl-mt">Resign this game?</div><div class="pl-mrow"><button class="pl-btn" id="plMNo">Cancel</button><button class="pl-btn danger" id="plMYes">Resign</button></div></div></div></div>
+<div class="pl-top"><div class="pl-status" id="plStatus"></div><span class="pl-lvl" id="plLvl"></span><button class="pl-btn" id="plCopy">Copy PGN</button><button class="pl-btn main pl-again" id="plAgainTop">New game</button><div class="pl-rsw"><button class="pl-btn" id="plResign">Resign</button><div class="pl-rpop" id="plModal"><div class="pl-mt">Resign this game?</div><div class="pl-mrow"><button class="pl-btn" id="plMNo">Cancel</button><button class="pl-btn danger" id="plMYes">Resign</button></div></div></div></div>
 <div class="pl-card pl-moves"><div class="pl-open" id="plOpen"></div><div class="pl-mv" id="plMoves"></div><div class="pl-nav"><button data-n="first" title="First"><svg viewBox="0 0 24 24"><path d="M18.4 6.4 17 5l-7 7 7 7 1.4-1.4L12.8 12zM11.4 6.4 10 5l-7 7 7 7 1.4-1.4L5.8 12z"/></svg></button><button data-n="prev" title="Previous"><svg viewBox="0 0 24 24"><path d="M15.4 6.4 14 5l-7 7 7 7 1.4-1.4L9.8 12z"/></svg></button><button data-n="next" title="Next"><svg viewBox="0 0 24 24"><path d="M8.6 17.6 10 19l7-7-7-7-1.4 1.4 5.6 5.6z"/></svg></button><button data-n="last" title="Last"><svg viewBox="0 0 24 24"><path d="M5.6 17.6 7 19l7-7-7-7-1.4 1.4 5.6 5.6zM12.6 17.6 14 19l7-7-7-7-1.4 1.4 5.6 5.6z"/></svg></button></div></div>
-<div class="pl-btns"><button class="pl-btn" id="plAnalyze">Analyze</button><button class="pl-btn" id="plCopy">Copy PGN</button><button class="pl-btn main pl-again" id="plAgain">New game</button></div>
+<div class="pl-btns"><button class="pl-btn" id="plAnalyze">Analyze</button><button class="pl-btn main pl-again" id="plAgain">New game</button></div>
 <div class="pl-card pl-anal" id="plAnal"><svg id="plGraph" viewBox="0 0 300 70" preserveAspectRatio="none"></svg><div class="pl-tip" id="plTip"></div><div class="pl-best" id="plBest"></div><div class="pl-sum" id="plSum"></div></div>
 </div>
 </div>`;
@@ -86,7 +86,7 @@ function render(){
   const lv=(st.mode==="fen"||st.cv>=0)&&LIVE[g.fen()],au=st.mode==="fen"||st.cv>=0?(lv&&lv.u):st.anal&&st.anal.done&&st.view>0&&st.anal.bestSan[st.view]&&st.anal.bestUci?st.anal.bestUci[st.view]:null;
   B.innerHTML=html+arrows([...(au?[au]:[]),...st.arrows]);
   if(st.anim){const an=st.anim,t=B.querySelector(`.sq[data-sq="${an.to}"] .pc`),fs=B.querySelector(`.sq[data-sq="${an.from}"]`),ts=B.querySelector(`.sq[data-sq="${an.to}"]`);if(t&&fs&&ts){const a=fs.getBoundingClientRect(),b=ts.getBoundingClientRect();t.style.transition="none";t.style.transform=`translate(${a.left-b.left}px,${a.top-b.top}px)`;t.style.zIndex=5;t.getBoundingClientRect();t.style.transition="transform .15s ease-out";t.style.transform=""}}st.anim=null;
-  $("plWrap").classList.toggle("idle",st.phase==="setup");$("plWrap").classList.toggle("side",st.cv>=0);  $("plSetup").style.display=st.phase==="setup"?"":"none";$("plGame").style.display=st.phase==="game"?"":"none";$("plClocks").style.display=st.tc==="none"||st.mode!=="play"?"none":"";
+  $("plWrap").classList.toggle("idle",st.phase==="setup");root.classList.toggle("setup",st.phase==="setup");$("plWrap").classList.toggle("side",st.cv>=0);  $("plSetup").style.display=st.phase==="setup"?"":"none";$("plGame").style.display=st.phase==="game"?"":"none";$("plClocks").style.display=st.tc==="none"||st.mode!=="play"?"none":"";
   renderEval();renderMoves();renderClocks();renderStatus();renderAnal();
 }
 
@@ -157,7 +157,7 @@ function renderStatus(){
   else t=st.game.turn()===st.user?"Your move":"Engine to move";
   if(st.analyzing)t=st.analyzing;
   const pm=st.mode==="play";if(!pm)t=st.analyzing||(st.mode==="fen"?"Analysis board":st.title);
-  $("plStatus").textContent=t;$("plLvl").innerHTML=pm?`Engine <b>${st.gameElo||st.elo}</b>`:"";
+  {const P=$("plStatus");if(!pm&&st.mode==="pgn"&&st.vs&&!st.analyzing)P.innerHTML=vsH(st.vs.w,st.vs.b);else P.textContent=t}$("plLvl").innerHTML=pm?`Engine <b>${st.gameElo||st.elo}</b>`:"";
   $("plResign").parentElement.style.display=st.over||!pm?"none":"";const dn=!!(st.anal&&st.anal.done);$("plAgain").style.display=pm&&st.over&&!dn?"":"none";$("plAgainTop").style.display=!pm||st.over&&dn?"":"none";
   $("plAnalyze").style.display=pm&&st.over&&!(st.anal&&st.anal.done)?"":"none";$("plCopy").style.display=hist().length&&(st.over||!pm)?"":"none";$("plAnalyze").disabled=!!st.analyzing||hist().length===0;
 }
@@ -180,7 +180,7 @@ function renderAnal(){
 const RES=()=>/you win/i.test(st.over)?(st.user==="w"?"1-0":"0-1"):/engine wins|you resigned/i.test(st.over)?(st.user==="w"?"0-1":"1-0"):/draw/i.test(st.over)?"1/2-1/2":"*";
 function buildPgn(){
   const h=hist(),d=new Date(),dt=`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")}`;
-  const hd=st.mode==="play"?{Event:"Chess Crack vs Stockfish",Date:dt,White:st.user==="w"?"You":`Stockfish ${st.gameElo}`,Black:st.user==="b"?"You":`Stockfish ${st.gameElo}`,Result:RES(),TimeControl:st.tc==="none"?"-":TCS[st.tc].join("+")}:Object.assign({Event:st.title||"Analysis",Date:dt},st.hd||{});
+  const hd=st.mode==="play"?{Event:"Chess Crack vs Stockfish",Date:dt,White:st.user==="w"?"You":`Stockfish (${st.gameElo})`,Black:st.user==="b"?"You":`Stockfish (${st.gameElo})`,Result:RES(),TimeControl:st.tc==="none"?"-":TCS[st.tc].join("+")}:Object.assign({Event:st.title||"Analysis",Date:dt},st.hd||{});
   hd.Result=hd.Result||"*";if(st.startFen!==STD){hd.SetUp="1";hd.FEN=st.startFen}
   let s=Object.entries(hd).map(([k,v])=>`[${k} "${v}"]`).join("\n")+"\n\n";
   h.forEach((m,i)=>{const n=plyNo(i+1);if(m.color==="w")s+=`${n}. `;else if(i===0)s+=`${n}... `;s+=m.san+" "});
@@ -189,28 +189,30 @@ function buildPgn(){
 const loadGames=()=>{try{return JSON.parse(localStorage.getItem("cc_games")||"[]")}catch(e){return []}};
 const saveGames=a=>{a=a.slice();while(a.length){try{localStorage.setItem("cc_games",JSON.stringify(a));return}catch(e){a.pop()}}try{localStorage.setItem("cc_games","[]")}catch(e){}};let delAsk=null;
 function packAnal(a){const ev=[];for(let i=0;i<=hist().length;i++)ev.push(a[i]);return {cls:a.cls,bestSan:a.bestSan,bestUci:a.bestUci||[],ev}}
-function storeGame(){const a=loadGames(),id=Date.now();a.unshift({id,date:id,user:st.user,elo:st.gameElo,tc:st.tc,res:RES(),msg:st.over,moves:hist().map(m=>m.san)});saveGames(a);st.gid=id;renderSaved()}
+function storeGame(){const a=loadGames(),id=Date.now();a.unshift({id,date:id,user:st.user,elo:st.gameElo,tc:st.tc,res:RES(),msg:st.over,moves:hist().map(m=>m.san),times:st.times.slice()});saveGames(a);st.gid=id;renderSaved()}
 function storeImport(){
   const a=loadGames(),mv=hist().map(m=>m.san),W=st.hd.White||"White",Bk=st.hd.Black||"Black",res=st.hd.Result||"*";
   const ex=a.find(g=>g.kind==="pgn"&&g.white===W&&g.black===Bk&&g.startFen===st.startFen&&g.moves.join(" ")===mv.join(" "));
-  if(ex){st.gid=ex.id;return ex}
+  if(ex){st.gid=ex.id;if(!(ex.times&&ex.times.length)&&st.times.length){ex.times=st.times.slice();saveGames(a)}return ex}
   const m=/^(\d{4})\.(\d{2})\.(\d{2})$/.exec(st.hd.Date||""),id=Date.now();
-  a.unshift({id,kind:"pgn",date:m?new Date(+m[1],+m[2]-1,+m[3]).getTime():id,white:W,black:Bk,res,startFen:st.startFen,moves:mv});saveGames(a);st.gid=id;return null;
+  a.unshift({id,kind:"pgn",date:m?new Date(+m[1],+m[2]-1,+m[3]).getTime():id,white:W,black:Bk,res,startFen:st.startFen,moves:mv,times:st.times.slice()});saveGames(a);st.gid=id;return null;
 }
-function setLastWin(){const g=loadGames().find(g=>!g.kind&&g.elo&&g.res===(g.user==="w"?"1-0":"0-1")),e=g?g.elo:1000;st.elo=e;$("plStr").value=e;$("plElo").textContent=e;$("plLw").textContent=g?`Last win: ${g.elo}`:""}
+function setLastWin(){const g=loadGames().filter(g=>!g.kind&&g.elo&&g.res===(g.user==="w"?"1-0":"0-1")).sort((a,b)=>b.elo-a.elo)[0],e=g?Math.min(3100,g.elo+100):1000;st.elo=e;$("plStr").value=e;$("plElo").textContent=e;$("plLw").textContent=g?`Best win: ${g.elo}`:""}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
+const vsH=(w,b)=>`<span class="pw">${esc(w)}</span> vs <span class="pb">${esc(b)}</span>`;
 function renderSaved(){
   const a=loadGames(),box=$("plSaved");box.style.display=a.length?"":"none";if(!a.length)return;
   $("plGList").innerHTML=a.map(g=>{if(g.kind==="pgn"){const d=new Date(g.date),rs=g.res==="1/2-1/2"?"½":g.res==="*"?"–":g.res;
-      return `<div class="pl-gi" data-gid="${g.id}"><span class="gr gr-p">${rs}</span><span class="gm">${g.white} vs ${g.black} · ${Math.ceil(g.moves.length/2)} move${Math.ceil(g.moves.length/2)===1?"":"s"}</span><span class="gd">${d.getDate()} ${d.toLocaleString("en",{month:"short"})}</span>${delAsk===g.id?`<span class="gq">Delete?</span><button class="pl-btn gy" data-yes="${g.id}">Delete</button><button class="pl-btn gn" data-no="1">Cancel</button>`:`<button class="gx" data-del="${g.id}" title="Delete">×</button>`}</div>`}
+      return `<div class="pl-gi" data-gid="${g.id}"><span class="gr gr-p">${rs}</span><span class="gm">${vsH(g.white,g.black)} · ${Math.ceil(g.moves.length/2)} move${Math.ceil(g.moves.length/2)===1?"":"s"}</span><span class="gd">${d.getDate()} ${d.toLocaleString("en",{month:"short"})}</span>${delAsk===g.id?`<span class="gq">Delete?</span><button class="pl-btn gy" data-yes="${g.id}">Delete</button><button class="pl-btn gn" data-no="1">Cancel</button>`:`<button class="gx" data-del="${g.id}" title="Delete">×</button>`}</div>`}
     const win=g.res===(g.user==="w"?"1-0":"0-1"),r=g.res==="1/2-1/2"?"d":g.res==="*"?"u":win?"w":"l";const d=new Date(g.date);
-    return `<div class="pl-gi" data-gid="${g.id}"><span class="gr r-${r}">${{w:"W",l:"L",d:"D",u:"–"}[r]}</span><span class="gm">vs Stockfish ${g.elo} · ${g.user==="w"?"White":"Black"} · ${Math.ceil(g.moves.length/2)} move${Math.ceil(g.moves.length/2)===1?"":"s"}</span><span class="gd">${d.getDate()} ${d.toLocaleString("en",{month:"short"})}</span>${delAsk===g.id?`<span class="gq">Delete?</span><button class="pl-btn gy" data-yes="${g.id}">Delete</button><button class="pl-btn gn" data-no="1">Cancel</button>`:`<button class="gx" data-del="${g.id}" title="Delete">×</button>`}</div>`}).join("");
+    return `<div class="pl-gi" data-gid="${g.id}"><span class="gr r-${r}">${{w:"W",l:"L",d:"D",u:"–"}[r]}</span><span class="gm">${g.user==="w"?vsH("You",`Stockfish (${g.elo})`):vsH(`Stockfish (${g.elo})`,"You")} · ${Math.ceil(g.moves.length/2)} move${Math.ceil(g.moves.length/2)===1?"":"s"}</span><span class="gd">${d.getDate()} ${d.toLocaleString("en",{month:"short"})}</span>${delAsk===g.id?`<span class="gq">Delete?</span><button class="pl-btn gy" data-yes="${g.id}">Delete</button><button class="pl-btn gn" data-no="1">Cancel</button>`:`<button class="gx" data-del="${g.id}" title="Delete">×</button>`}</div>`}).join("");
 }
 function openSaved(id){
   const r=loadGames().find(g=>g.id===id);if(!r)return;const g=new Chess(r.startFen||STD);try{r.moves.forEach(m=>g.move(m))}catch(e){return}
   closePromo();resetVars();st.gen++;st.analGen=(st.analGen||0)+1;
-  st.mode="pgn";st.startFen=STD;st.arrows=[];st.marks={};st.game=g;st.user=r.user;st.flip=r.user==="b";st.gameElo=r.elo;st.running=false;st.thinking=false;st.sel=null;st.analyzing=false;st.times=[];st.phase="game";st.gid=r.id;
-  if(r.kind==="pgn"){st.startFen=r.startFen||STD;st.user="w";st.flip=false;st.title=`${r.white} vs ${r.black}`;st.hd={White:r.white,Black:r.black,Result:r.res};st.over=r.res!=="*"?r.res:"Imported game"}
-  else{st.title=`You vs Stockfish ${r.elo}`;st.hd={White:r.user==="w"?"You":`Stockfish ${r.elo}`,Black:r.user==="b"?"You":`Stockfish ${r.elo}`,Result:r.res};st.over=r.msg||r.res}st.view=hist().length;
+  st.mode="pgn";st.startFen=STD;st.arrows=[];st.marks={};st.game=g;st.user=r.user;st.flip=r.user==="b";st.gameElo=r.elo;st.running=false;st.thinking=false;st.sel=null;st.analyzing=false;st.times=(r.times||[]).slice();st.phase="game";st.gid=r.id;
+  if(r.kind==="pgn"){st.startFen=r.startFen||STD;st.user="w";st.flip=false;st.title=`${r.white} vs ${r.black}`;st.vs={w:r.white,b:r.black};st.hd={White:r.white,Black:r.black,Result:r.res};st.over=r.res!=="*"?r.res:"Imported game"}
+  else{st.title=`You vs Stockfish (${r.elo})`;st.vs=r.user==="w"?{w:"You",b:`Stockfish (${r.elo})`}:{w:`Stockfish (${r.elo})`,b:"You"};st.hd={White:r.user==="w"?"You":`Stockfish (${r.elo})`,Black:r.user==="b"?"You":`Stockfish (${r.elo})`,Result:r.res};st.over=r.msg||r.res}st.view=hist().length;
   if(r.anal){const a={cls:r.anal.cls,bestSan:r.anal.bestSan,bestUci:r.anal.bestUci,done:true};r.anal.ev.forEach((e,i)=>a[i]=e);st.anal=a;render()}else{st.anal=null;render();analyze()}
 }
 function finish(msg){setTimeout(()=>sfx("game-end",()=>chime("end")),250);st.over=msg;st.running=false;st.thinking=false;st.gen++;try{playEng&&playEng.send("stop")}catch(e){}if(st.mode==="play"&&hist().length)storeGame();render()}
@@ -311,18 +313,23 @@ function newGame(){
 }
 function importGame(){
   const raw=$("plImp").value,err=$("plImpErr");const hd={};raw.replace(/\[(\w+)\s+"([^"]*)"\]/g,(_,k,v)=>{hd[k]=v});
-  const sv=raw.replace(/\[[^\]]*\]/g," ").trim();let g,mode;
+  const sv=raw.replace(/^\s*\[\w+\s+"[^"]*"\]\s*$/gm," ").trim();let g,mode;
   try{
     if(!sv&&!hd.FEN)throw new Error("Paste a PGN or FEN");
     if(/^[1-8pnbrqkPNBRQK]+(\/[1-8pnbrqkPNBRQK]+){7}\s/.test(sv+" ")){try{g=new Chess(sv)}catch(e){throw new Error("Invalid FEN")}st.startFen=g.fen();mode="fen"}
     else{try{g=new Chess(hd.FEN||STD)}catch(e){throw new Error("Invalid FEN header")}st.startFen=g.fen();mode="pgn";
-      for(const t of sv.replace(/\{[^}]*\}/g," ").replace(/\([^()]*\)/g," ").replace(/\$\d+/g," ").replace(/\d+\.(\.\.)?/g," ").split(/\s+/))if(t&&!/^(1-0|0-1|1\/2-1\/2|\*)$/.test(t)){try{g.move(t)}catch(e){throw new Error("Illegal move: "+t)}}
+      let s2=sv;while(/\([^()]*\)/.test(s2))s2=s2.replace(/\([^()]*\)/g," ");
+      const clk=[];for(const t of (s2.replace(/\$\d+/g," ").match(/\{[^}]*\}|[^\s{}]+/g)||[])){
+        if(t[0]==="{"){const c=/%clk\s+(\d+):(\d+):(\d+(?:\.\d+)?)/.exec(t);if(c&&g.history().length)clk[g.history().length-1]=(+c[1]*3600+ +c[2]*60+ +c[3])*1000;continue}
+        const mt=t.replace(/^\d+\.(\.\.)?/,"");if(!mt||/^(1-0|0-1|1\/2-1\/2|\*)$/.test(mt))continue;try{g.move(mt)}catch(e){throw new Error("Illegal move: "+mt)}}
+      var pgnTimes=[];const tcm=/^(\d+)(?:\+(\d+))?/.exec(hd.TimeControl||""),base=tcm?+tcm[1]*1000:null,inc=tcm&&tcm[2]?+tcm[2]*1000:0,prev={};
+      g.history({verbose:true}).forEach((m,i)=>{const c=clk[i];if(c===undefined)return;const pv=prev[m.color]!==undefined?prev[m.color]:base;if(pv!==null&&pv!==undefined)pgnTimes[i]=Math.max(0,pv-c+inc);prev[m.color]=c});
       if(!g.history().length)throw new Error("No moves found")}
   }catch(e){err.textContent=e.message;return}
   err.textContent="";$("plImp").value="";closePromo();
   st.gen++;st.analGen=(st.analGen||0)+1;try{playEng&&playEng.send("stop")}catch(e){}
-  resetVars();st.mode=mode;st.arrows=[];st.marks={};st.game=g;st.user="w";st.flip=false;st.running=false;st.thinking=false;st.sel=null;st.anal=null;st.analyzing=false;st.times=[];st.phase="game";
-  st.title=hd.White&&hd.Black?`${hd.White} vs ${hd.Black}`:"Imported game";st.gid=null;st.hd={};["White","Black","Result","Date","Event"].forEach(k=>{if(hd[k])st.hd[k]=hd[k]});
+  resetVars();st.mode=mode;st.arrows=[];st.marks={};st.game=g;st.user="w";st.flip=false;st.running=false;st.thinking=false;st.sel=null;st.anal=null;st.analyzing=false;st.times=mode==="pgn"&&typeof pgnTimes!=="undefined"?pgnTimes:[];st.phase="game";
+  st.title=hd.White&&hd.Black?`${hd.White} vs ${hd.Black}`:"Imported game";st.vs=hd.White&&hd.Black?{w:hd.White,b:hd.Black}:null;st.gid=null;st.hd={};["White","Black","Result","Date","Event"].forEach(k=>{if(hd[k])st.hd[k]=hd[k]});
   if(mode==="pgn"){st.over=hd.Result&&hd.Result!=="*"?hd.Result:"Imported game";st.view=0;const ex=storeImport();
     if(ex&&ex.anal){const a={cls:ex.anal.cls,bestSan:ex.anal.bestSan,bestUci:ex.anal.bestUci,done:true};ex.anal.ev.forEach((e,i)=>a[i]=e);st.anal=a;render()}else{render();analyze()}}else{st.over=null;st.view=hist().length;render()}
 }
@@ -375,8 +382,8 @@ addEventListener("keyup",e=>{if(e.code==="Space")spDown=false});addEventListener
 B.addEventListener("mousedown",e=>{if(e.button!==2||performance.now()-st.rcAt<60||st.phase!=="game"||(st.over&&!(st.anal&&st.anal.done)))return;const q=e.target.closest(".sq");st.arDown=q?q.dataset.sq:null});
 addEventListener("mouseup",e=>{if(e.button!==2||!st.arDown)return;const t=document.elementFromPoint(e.clientX,e.clientY),q=t&&t.closest&&t.closest("#plB .sq"),a=st.arDown;st.arDown=null;
   if(!q)return;if(q.dataset.sq===a){const c=e.shiftKey||spDown?"b":"r";if(st.marks[a]===c)delete st.marks[a];else st.marks[a]=c;render();return}const k=a+q.dataset.sq,i=st.arrows.indexOf(k);if(i<0)st.arrows.push(k);else st.arrows.splice(i,1);render()});
-B.addEventListener("pointerdown",e=>{if(e.button!==0)return;if(st.arrows.length||Object.keys(st.marks).length){st.arrows=[];st.marks={};render()}
-  const sq=e.target.closest(".sq");if(!sq)return;
+B.addEventListener("pointerdown",e=>{if(e.button!==0)return;const s0=(e.target.closest(".sq")||{}).dataset;if(st.arrows.length||Object.keys(st.marks).length){st.arrows=[];st.marks={};render()}
+  const sq=s0&&s0.sq?B.querySelector(`.sq[data-sq="${s0.sq}"]`):null;if(!sq)return;
   if(!canEx()&&!(live()&&userTurn()))return;
   const s=sq.dataset.sq,p=act().get(s);
   if(st.sel&&st.sel!==s&&!mine(p)){if(tryMove(st.sel,s,undefined,true))return}
@@ -385,11 +392,12 @@ B.addEventListener("pointerdown",e=>{if(e.button!==0)return;if(st.arrows.length|
     const img=sq.querySelector(".pc");const ghost=img.cloneNode();ghost.className="pl-ghost";const w=sq.getBoundingClientRect().width;ghost.style.width=ghost.style.height=w+"px";document.body.appendChild(ghost);
     const mvG=ev=>{ghost.style.left=ev.clientX-w/2+"px";ghost.style.top=ev.clientY-w/2+"px"};mvG(e);
     st.drag={from:s,ghost,moved:false};document.documentElement.classList.add("pl-grabbing");render();
-    const move=ev=>{st.drag.moved=true;mvG(ev)};
-    const up=ev=>{if(!st.drag||ev.button===2)return;document.documentElement.classList.remove("pl-grabbing");removeEventListener("pointermove",move);removeEventListener("pointerup",up);ghost.remove();const d=st.drag;st.drag=null;
+    const hov=q=>{B.querySelectorAll(".sq.hov").forEach(x=>{if(x!==q)x.classList.remove("hov")});if(q)q.classList.add("hov")};
+    const move=ev=>{st.drag.moved=true;mvG(ev);const t=document.elementFromPoint(ev.clientX,ev.clientY);hov(t&&t.closest?t.closest("#plB .sq"):null)};
+    const up=ev=>{if(!st.drag||ev.button===2)return;hov(null);document.documentElement.classList.remove("pl-grabbing");removeEventListener("pointermove",move);removeEventListener("pointerup",up);ghost.remove();const d=st.drag;st.drag=null;
       const t=document.elementFromPoint(ev.clientX,ev.clientY);const tq=t&&t.closest&&t.closest("#plB .sq");
       if(tq&&tq.dataset.sq!==d.from&&d.moved){st.noAnim=true;if(tryMove(d.from,tq.dataset.sq))return;st.noAnim=false}else if(tq&&tq.dataset.sq!==d.from&&tryMove(d.from,tq.dataset.sq,undefined,true))return;render()};
-    st.drag.cleanup=()=>{document.documentElement.classList.remove("pl-grabbing");removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up);
+    st.drag.cleanup=()=>{hov(null);document.documentElement.classList.remove("pl-grabbing");removeEventListener("pointermove",move);removeEventListener("pointerup",up)};addEventListener("pointermove",move);addEventListener("pointerup",up);
   }else{st.sel=null;render()}
 });
 
@@ -439,7 +447,7 @@ const fit=()=>{
   const avail=root.clientWidth-(narrow?0:300+12+25)-38;
   let w=Math.floor(Math.min(avail,narrow?avail:innerHeight-top-pb-4));
   w=Math.max(240,w);L.style.width=w+38+"px";requestAnimationFrame(()=>{const bw=B.getBoundingClientRect().width;B.style.setProperty("--bs",Math.round(bw/8*.42)+"px")});
-  if(!narrow){side.style.height=L.getBoundingClientRect().height+"px";const o=document.documentElement.scrollHeight-innerHeight;if(o>0){L.style.width=Math.max(240,w-o)+38+"px";side.style.height=L.getBoundingClientRect().height+"px"}}
+  if(!narrow&&st.phase!=="setup"){side.style.height=L.getBoundingClientRect().height+"px";const o=document.documentElement.scrollHeight-innerHeight;if(o>0){L.style.width=Math.max(240,w-o)+38+"px";side.style.height=L.getBoundingClientRect().height+"px"}}
   MV.scrollTop=mst;
 };
 addEventListener("resize",fit);
