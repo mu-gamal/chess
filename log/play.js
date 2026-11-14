@@ -17,7 +17,7 @@ root.innerHTML=`<div class="pl-left"><div class="pl-wrap" id="plWrap"><div class
 <div id="plSetup" class="pl-sec">
 <div class="pl-card"><div class="pl-lbl">Play as</div><div class="seg" id="plColor"><button data-v="w" class="on">White</button><button data-v="r">Random</button><button data-v="b">Black</button></div></div>
 <div class="pl-card"><div class="pl-lbl">Time control</div><div class="seg" id="plTc"><button data-v="none" class="on">No clock</button><button data-v="10+5">10+5</button><button data-v="15+10">15+10</button></div></div>
-<div class="pl-card"><div class="pl-lbl">Engine strength <span id="plElo">1000</span></div><input type="range" id="plStr" min="1000" max="3100" step="100" value="1000"><div class="pl-ticks"><span>1000</span><span class="pl-lw" id="plLw"></span><span>3100</span></div></div>
+<div class="pl-card"><div class="pl-lbl">Engine strength <span class="pl-evr"><span id="plAv"></span><span id="plElo">1000</span></span></div><input type="range" id="plStr" min="1000" max="3100" step="100" value="1000"><div class="pl-ticks"><span>1000</span><span class="pl-lw" id="plLw"></span><span>3100</span></div></div>
 <button class="pl-btn main" id="plNew">Start game</button>
 <div class="pl-card" id="plAnaCard"><div class="pl-lbl">Analyze</div><textarea class="pl-in" id="plImp" rows="3" spellcheck="false" placeholder="Paste PGN or FEN"></textarea><div class="pl-err" id="plImpErr"></div><button class="pl-btn" id="plImpGo">Analyze</button></div>
 <div class="pl-card" id="plSaved"><div class="pl-lbl">Saved games</div><div class="pl-glist" id="plGList"></div></div>
@@ -162,7 +162,7 @@ function renderStatus(){
   else t=st.game.turn()===st.user?"Your move":"Engine to move";
   if(st.analyzing)t=st.analyzing;
   const pm=st.mode==="play";if(!pm)t=st.analyzing||(st.mode==="fen"?"Analysis board":st.title);
-  {const P=$("plStatus");if(!pm&&st.mode==="pgn"&&st.vs&&!st.analyzing)P.innerHTML=vsH(st.vs.w,st.vs.b);else P.textContent=t}$("plLvl").innerHTML=pm?`Engine <b>${st.gameElo||st.elo}</b>`:"";
+  {const P=$("plStatus");if(!pm&&st.mode==="pgn"&&st.vs&&!st.analyzing)P.innerHTML=vsH(st.vs.w,st.vs.b);else P.textContent=t}$("plLvl").innerHTML=pm?`${eAv(st.gameElo||st.elo)}<b>${st.gameElo||st.elo}</b>`:"";
   $("plResign").parentElement.style.display=st.over||!pm?"none":"";const dn=!!(st.anal&&st.anal.done);$("plAgain").style.display=pm&&st.over&&!dn?"":"none";$("plAgainTop").style.display=!pm||st.over&&dn?"":"none";
   $("plAnalyze").style.display=pm&&st.over&&!(st.anal&&st.anal.done)?"":"none";$("plCopy").style.display=hist().length&&(st.over||!pm)?"":"none";$("plAnalyze").disabled=!!st.analyzing||hist().length===0;
 }
@@ -203,15 +203,18 @@ function storeImport(){
   const m=/^(\d{4})\.(\d{2})\.(\d{2})$/.exec(st.hd.Date||""),id=Date.now();
   a.unshift({id,kind:"pgn",date:m?new Date(+m[1],+m[2]-1,+m[3]).getTime():id,white:W,black:Bk,res,startFen:st.startFen,moves:mv,times:st.times.slice()});saveGames(a);st.gid=id;return null;
 }
-function setLastWin(){const g=loadGames().filter(g=>!g.kind&&g.elo&&g.res===(g.user==="w"?"1-0":"0-1")).sort((a,b)=>b.elo-a.elo)[0],e=g?Math.min(3100,g.elo+100):1000;st.elo=e;$("plStr").value=e;$("plElo").textContent=e;$("plLw").textContent=g?`Best win: ${g.elo}`:""}
+function setLastWin(){const g=loadGames().filter(g=>!g.kind&&g.elo&&g.res===(g.user==="w"?"1-0":"0-1")).sort((a,b)=>b.elo-a.elo)[0],e=g?Math.min(3100,g.elo+100):1000;st.elo=e;$("plStr").value=e;$("plElo").textContent=e;updAv();$("plLw").textContent=g?`Best win: ${g.elo}`:""}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const vsH=(w,b)=>`<span class="pw">${esc(w)}</span> vs <span class="pb">${esc(b)}</span>`;
+const tier=e=>e<1400?{n:"Rookie",p:"P",c:"#5a9e4b"}:e<1800?{n:"Intermediate",p:"N",c:"#3f7fc4"}:e<2300?{n:"Advanced",p:"R",c:"#8a5cc7"}:{n:"Beast",p:"Q",c:"#d0453a"};
+const eAv=e=>{const t=tier(e);return `<span class="eav" style="background:${t.c}" title="${t.n}"><img src="${PIECES[t.p]}" alt=""></span>`};
+function updAv(){const e=st.elo;$("plAv").innerHTML=`${eAv(e)}<span class="eavn">${tier(e).n}</span>`}
 function renderSaved(){
   const a=loadGames(),box=$("plSaved");box.style.display=a.length?"":"none";if(!a.length)return;
   $("plGList").innerHTML=a.map(g=>{if(g.kind==="pgn"){const d=new Date(g.date),rs=g.res==="1/2-1/2"?"½":g.res==="*"?"–":g.res;
       return `<div class="pl-gi" data-gid="${g.id}"><span class="gr gr-p">${rs}</span><span class="gm">${vsH(g.white,g.black)} · ${Math.ceil(g.moves.length/2)} move${Math.ceil(g.moves.length/2)===1?"":"s"}</span><span class="gd">${d.getDate()} ${d.toLocaleString("en",{month:"short"})}</span>${delAsk===g.id?`<span class="gq">Delete?</span><button class="pl-btn gy" data-yes="${g.id}">Delete</button><button class="pl-btn gn" data-no="1">Cancel</button>`:`<button class="gx" data-del="${g.id}" title="Delete">×</button>`}</div>`}
     const win=g.res===(g.user==="w"?"1-0":"0-1"),r=g.res==="1/2-1/2"?"d":g.res==="*"?"u":win?"w":"l";const d=new Date(g.date);
-    return `<div class="pl-gi" data-gid="${g.id}"><span class="gr r-${r}">${{w:"W",l:"L",d:"D",u:"–"}[r]}</span><span class="gm">${g.user==="w"?vsH("You",`Stockfish (${g.elo})`):vsH(`Stockfish (${g.elo})`,"You")} · ${Math.ceil(g.moves.length/2)} move${Math.ceil(g.moves.length/2)===1?"":"s"}</span><span class="gd">${d.getDate()} ${d.toLocaleString("en",{month:"short"})}</span>${delAsk===g.id?`<span class="gq">Delete?</span><button class="pl-btn gy" data-yes="${g.id}">Delete</button><button class="pl-btn gn" data-no="1">Cancel</button>`:`<button class="gx" data-del="${g.id}" title="Delete">×</button>`}</div>`}).join("");
+    return `<div class="pl-gi" data-gid="${g.id}"><span class="gr r-${r}">${{w:"W",l:"L",d:"D",u:"–"}[r]}</span><span class="gm">${g.user==="w"?`<span class="pw">You</span> vs <span class="pb">${eAv(g.elo)}Stockfish (${g.elo})</span>`:`<span class="pw">${eAv(g.elo)}Stockfish (${g.elo})</span> vs <span class="pb">You</span>`} · ${Math.ceil(g.moves.length/2)} move${Math.ceil(g.moves.length/2)===1?"":"s"}</span><span class="gd">${d.getDate()} ${d.toLocaleString("en",{month:"short"})}</span>${delAsk===g.id?`<span class="gq">Delete?</span><button class="pl-btn gy" data-yes="${g.id}">Delete</button><button class="pl-btn gn" data-no="1">Cancel</button>`:`<button class="gx" data-del="${g.id}" title="Delete">×</button>`}</div>`}).join("");
 }
 function openSaved(id){
   const r=loadGames().find(g=>g.id===id);if(!r)return;const g=new Chess(r.startFen||STD);try{r.moves.forEach(m=>g.move(m))}catch(e){return}
@@ -509,7 +512,7 @@ addEventListener("keydown",e=>{if(!root.closest(".tabpane").classList.contains("
 const seg=(id,cb)=>$(id).querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{$(id).querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));cb(b.dataset.v)}));
 seg("plColor",v=>{st.colorPick=v});
 seg("plTc",v=>{st.tc=v});
-$("plStr").addEventListener("input",e=>{st.elo=+e.target.value;$("plElo").textContent=st.elo});
+$("plStr").addEventListener("input",e=>{st.elo=+e.target.value;$("plElo").textContent=st.elo;updAv()});
 $("plNew").addEventListener("click",newGame);
 $("plImp").addEventListener("input",()=>{$("plImpErr").textContent=""});$("plImpGo").addEventListener("click",importGame);
 $("plGList").addEventListener("click",e=>{const d=e.target.closest("[data-del]");if(d){delAsk=+d.dataset.del;renderSaved();return}const y=e.target.closest("[data-yes]");if(y){const gid=+y.dataset.yes;saveGames(loadGames().filter(g=>g.id!==gid));try{const dl=JSON.parse(localStorage.getItem("cc_games_del")||"[]");dl.push(gid);localStorage.setItem("cc_games_del",JSON.stringify(dl))}catch(er){}delAsk=null;renderSaved();return}if(e.target.closest("[data-no]")){delAsk=null;renderSaved();return}if(delAsk!==null){delAsk=null;renderSaved();return}const r=e.target.closest("[data-gid]");if(r)openSaved(+r.dataset.gid)});
@@ -534,7 +537,7 @@ const fit=()=>{
   const L=root.querySelector(".pl-left"),side=$("plSide"),MV=$("plMoves"),mst=MV.scrollTop;L.style.width="";side.style.height="";
   const narrow=innerWidth<=900;
   const wrap=document.querySelector(".wrap"),pb=parseFloat(getComputedStyle(wrap).paddingBottom)||0;
-  const top=L.getBoundingClientRect().top+scrollY;
+  const top=L.getBoundingClientRect().top+(getComputedStyle(L).position==="sticky"?0:scrollY);
   const avail=root.clientWidth-(narrow?0:300+12+25)-38;
   let w=Math.floor(Math.min(avail,narrow?avail:innerHeight-top-pb-4));
   w=Math.max(240,w);L.style.width=w+38+"px";requestAnimationFrame(()=>{const bw=B.getBoundingClientRect().width;B.style.setProperty("--bs",Math.round(bw/8*.42)+"px")});
