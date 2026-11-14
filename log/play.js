@@ -8,7 +8,7 @@ const SET=(()=>{try{return Object.assign({},DEF,JSON.parse(localStorage.getItem(
 const saveSet=()=>{try{localStorage.setItem("cc_play",JSON.stringify(SET))}catch(e){}};
 const FILES="abcdefgh";
 const STD="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const st={game:new Chess(),user:"w",colorPick:"w",tc:"none",elo:1500,flip:false,sel:null,view:0,over:null,thinking:false,clock:{w:0,b:0},running:false,anal:null,analyzing:false,drag:null,promo:null,gen:0,phase:"setup",times:[],turnStart:0,startFen:STD,mode:"play",vars:[],cv:-1,ck:0,arrows:[],arDown:null,rcAt:0};
+const st={game:new Chess(),user:"w",colorPick:"w",tc:"none",elo:1000,flip:false,sel:null,view:0,over:null,thinking:false,clock:{w:0,b:0},running:false,anal:null,analyzing:false,drag:null,promo:null,gen:0,phase:"setup",times:[],turnStart:0,startFen:STD,mode:"play",vars:[],cv:-1,ck:0,arrows:[],marks:{},arDown:null,rcAt:0};
 
 root.innerHTML=`<div class="pl-left"><div class="pl-wrap" id="plWrap"><div class="pl-eval" id="plEval"><div class="w"></div><div class="v"></div></div><div class="board pl-b" id="plB"></div><div class="pl-promo" id="plPromo"></div></div>
 <div class="pl-tools"><button id="plGear" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3.3h-4l-.3 2.6a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></button><button id="plFlip" title="Flip board"><svg viewBox="0 0 24 24"><path d="M7 3 3 7h3v9h2V7h3zM17 21l4-4h-3V8h-2v9h-3z"/></svg></button>
@@ -17,7 +17,7 @@ root.innerHTML=`<div class="pl-left"><div class="pl-wrap" id="plWrap"><div class
 <div id="plSetup" class="pl-sec">
 <div class="pl-card"><div class="pl-lbl">Play as</div><div class="seg" id="plColor"><button data-v="w" class="on">White</button><button data-v="r">Random</button><button data-v="b">Black</button></div></div>
 <div class="pl-card"><div class="pl-lbl">Time control</div><div class="seg" id="plTc"><button data-v="none" class="on">No clock</button><button data-v="10+5">10+5</button><button data-v="15+10">15+10</button></div></div>
-<div class="pl-card"><div class="pl-lbl">Engine strength <span id="plElo">1500</span></div><input type="range" id="plStr" min="1000" max="3100" step="100" value="1500"><div class="pl-ticks"><span>1000</span><span>3100</span></div></div>
+<div class="pl-card"><div class="pl-lbl">Engine strength <span id="plElo">1000</span></div><input type="range" id="plStr" min="1000" max="3100" step="100" value="1000"><div class="pl-ticks"><span>1000</span><span class="pl-lw" id="plLw"></span><span>3100</span></div></div>
 <button class="pl-btn main" id="plNew">Start game</button>
 <div class="pl-card" id="plSaved"><div class="pl-lbl">Saved games</div><div class="pl-glist" id="plGList"></div></div>
 <div class="pl-card"><div class="pl-lbl">Analyze</div><textarea class="pl-in" id="plImp" rows="3" spellcheck="false" placeholder="Paste PGN or FEN"></textarea><div class="pl-err" id="plImpErr"></div><button class="pl-btn" id="plImpGo">Analyze</button></div>
@@ -81,7 +81,7 @@ function render(){
     let lab="";if(df===0)lab+=`<span class="crd rk">${s[1]}</span>`;if(dr===7)lab+=`<span class="crd fl">${s[0]}</span>`;
     const pc=p?`<img class="pc${st.drag&&st.drag.from===s?" ghosted":""}" draggable="false" src="${PIECES[p.color==="w"?p.type.toUpperCase():p.type]}" alt="">`:"";
     const bc=st.cv<0&&lm&&lm.to===s&&st.anal&&st.anal.cls?st.anal.cls[st.view]:null;
-    html+=`<div class="${cls.join(" ")}" data-sq="${s}">${pc}${d?`<span class="${p?"cap":"dot"}"></span>`:""}${bc?`<span class="sqb">${badge(bc)}</span>`:""}${lab}</div>`;
+    html+=`<div class="${cls.join(" ")}" data-sq="${s}">${st.marks[s]?`<span class="mkq ${st.marks[s]}"></span>`:""}${pc}${d?`<span class="${p?"cap":"dot"}"></span>`:""}${bc?`<span class="sqb">${badge(bc)}</span>`:""}${lab}</div>`;
   }
   const lv=(st.mode==="fen"||st.cv>=0)&&LIVE[g.fen()],au=st.mode==="fen"||st.cv>=0?(lv&&lv.u):st.anal&&st.anal.done&&st.view>0&&st.anal.bestSan[st.view]&&st.anal.bestUci?st.anal.bestUci[st.view]:null;
   B.innerHTML=html+arrows([...(au?[au]:[]),...st.arrows]);
@@ -197,6 +197,7 @@ function storeImport(){
   const m=/^(\d{4})\.(\d{2})\.(\d{2})$/.exec(st.hd.Date||""),id=Date.now();
   a.unshift({id,kind:"pgn",date:m?new Date(+m[1],+m[2]-1,+m[3]).getTime():id,white:W,black:Bk,res,startFen:st.startFen,moves:mv});saveGames(a);st.gid=id;return null;
 }
+function setLastWin(){const g=loadGames().find(g=>!g.kind&&g.elo&&g.res===(g.user==="w"?"1-0":"0-1")),e=g?g.elo:1000;st.elo=e;$("plStr").value=e;$("plElo").textContent=e;$("plLw").textContent=g?`Last win: ${g.elo}`:""}
 function renderSaved(){
   const a=loadGames(),box=$("plSaved");box.style.display=a.length?"":"none";if(!a.length)return;
   $("plGList").innerHTML=a.map(g=>{if(g.kind==="pgn"){const d=new Date(g.date),rs=g.res==="1/2-1/2"?"½":g.res==="*"?"–":g.res;
@@ -207,7 +208,7 @@ function renderSaved(){
 function openSaved(id){
   const r=loadGames().find(g=>g.id===id);if(!r)return;const g=new Chess(r.startFen||STD);try{r.moves.forEach(m=>g.move(m))}catch(e){return}
   closePromo();resetVars();st.gen++;st.analGen=(st.analGen||0)+1;
-  st.mode="pgn";st.startFen=STD;st.arrows=[];st.game=g;st.user=r.user;st.flip=r.user==="b";st.gameElo=r.elo;st.running=false;st.thinking=false;st.sel=null;st.analyzing=false;st.times=[];st.phase="game";st.gid=r.id;
+  st.mode="pgn";st.startFen=STD;st.arrows=[];st.marks={};st.game=g;st.user=r.user;st.flip=r.user==="b";st.gameElo=r.elo;st.running=false;st.thinking=false;st.sel=null;st.analyzing=false;st.times=[];st.phase="game";st.gid=r.id;
   if(r.kind==="pgn"){st.startFen=r.startFen||STD;st.user="w";st.flip=false;st.title=`${r.white} vs ${r.black}`;st.hd={White:r.white,Black:r.black,Result:r.res};st.over=r.res!=="*"?r.res:"Imported game"}
   else{st.title=`You vs Stockfish ${r.elo}`;st.hd={White:r.user==="w"?"You":`Stockfish ${r.elo}`,Black:r.user==="b"?"You":`Stockfish ${r.elo}`,Result:r.res};st.over=r.msg||r.res}st.view=hist().length;
   if(r.anal){const a={cls:r.anal.cls,bestSan:r.anal.bestSan,bestUci:r.anal.bestUci,done:true};r.anal.ev.forEach((e,i)=>a[i]=e);st.anal=a;render()}else{st.anal=null;render();analyze()}
@@ -235,7 +236,7 @@ const n=(f,at,d,v)=>{const o=AC.createOscillator(),g=AC.createGain();o.type="sin
 if(kind==="start"){n(523.25,0,.35,.18);n(783.99,.12,.5,.16)}else{n(783.99,0,.4,.16);n(659.25,.13,.4,.15);n(523.25,.26,.75,.17)}}catch(e){}}
 function synth(cap){if(!SET.sound)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const t=AC.currentTime;const tone=(f,d,at,v)=>{const o=AC.createOscillator(),g=AC.createGain();o.type="triangle";o.frequency.value=f;g.gain.setValueAtTime(v,t+at);g.gain.exponentialRampToValueAtTime(.001,t+at+d);o.connect(g).connect(AC.destination);o.start(t+at);o.stop(t+at+d)};if(cap){tone(220,.09,0,.35);tone(160,.12,.05,.3)}else tone(420,.07,0,.25)}catch(e){}}
 function applied(mv){
-  st.arrows=[];
+  st.arrows=[];st.marks={};
   if(st.mode!=="play"){if(!st.noAnim)st.anim=mv;st.noAnim=false;mvSnd(mv);st.view=hist().length;st.sel=null;render();return}
   if(!st.noAnim)st.anim=mv;st.noAnim=false;
   mvSnd(mv);
@@ -263,11 +264,11 @@ function exMove(G,from,to,promotion){
     if(st.ck<v.moves.length&&v.moves[st.ck]===san)st.ck++;
     else if(st.ck===v.moves.length){v.moves.push(san);st.ck++}
     else{const pre=v.moves.slice(0,st.ck).concat(san);let x=st.vars.findIndex(w=>w.base===v.base&&w.moves.length>=pre.length&&pre.every((m,k)=>w.moves[k]===m));if(x<0){st.vars.push({base:v.base,moves:pre});x=st.vars.length-1}st.cv=x;st.ck=pre.length}}
-  st.arrows=[];st.sel=null;st.noAnim?st.noAnim=false:st.anim={from:mv.from,to:mv.to};mvSnd(mv);render();
+  st.arrows=[];st.marks={};st.sel=null;st.noAnim?st.noAnim=false:st.anim={from:mv.from,to:mv.to};mvSnd(mv);render();
 }
 function step(d){
   if(st.cv<0){go(st.view+d);return}
-  const v=st.vars[st.cv];st.arrows=[];closePromo();st.sel=null;
+  const v=st.vars[st.cv];st.arrows=[];st.marks={};closePromo();st.sel=null;
   if(d>0){if(st.ck<v.moves.length){st.ck++;const l=curState().last;st.anim={from:l.from,to:l.to}}}
   else{const l=curState().last;st.anim={from:l.to,to:l.from};if(st.ck>1)st.ck--;else{st.cv=-1;st.ck=0;st.view=v.base}}
   render();
@@ -304,7 +305,7 @@ setInterval(()=>{const now=performance.now(),dt=now-tickT;tickT=now;if(!st.runni
 function newGame(){
   const g=new Chess();st.startFen=STD;st.mode="play";closePromo();
   st.gen++;try{playEng&&playEng.send("stop");playEng&&playEng.send("ucinewgame")}catch(e){}
-  resetVars();st.gid=null;st.hd=null;st.arrows=[];st.gameElo=st.elo;st.game=g;st.user=st.colorPick==="r"?(Math.random()<.5?"w":"b"):st.colorPick;st.flip=st.user==="b";
+  resetVars();st.gid=null;st.hd=null;st.arrows=[];st.marks={};st.gameElo=st.elo;st.game=g;st.user=st.colorPick==="r"?(Math.random()<.5?"w":"b"):st.colorPick;st.flip=st.user==="b";
   const [base]=TCS[st.tc];st.clock={w:base*1000,b:base*1000};st.running=false;st.over=null;st.thinking=false;st.sel=null;st.view=g.history().length;st.anal=null;st.analyzing=false;st.analGen=(st.analGen||0)+1;
   st.times=[];st.turnStart=performance.now();st.phase="game";sfx("game-start",()=>chime("start"));render();maybeEngine();
 }
@@ -320,7 +321,7 @@ function importGame(){
   }catch(e){err.textContent=e.message;return}
   err.textContent="";$("plImp").value="";closePromo();
   st.gen++;st.analGen=(st.analGen||0)+1;try{playEng&&playEng.send("stop")}catch(e){}
-  resetVars();st.mode=mode;st.arrows=[];st.game=g;st.user="w";st.flip=false;st.running=false;st.thinking=false;st.sel=null;st.anal=null;st.analyzing=false;st.times=[];st.phase="game";
+  resetVars();st.mode=mode;st.arrows=[];st.marks={};st.game=g;st.user="w";st.flip=false;st.running=false;st.thinking=false;st.sel=null;st.anal=null;st.analyzing=false;st.times=[];st.phase="game";
   st.title=hd.White&&hd.Black?`${hd.White} vs ${hd.Black}`:"Imported game";st.gid=null;st.hd={};["White","Black","Result","Date","Event"].forEach(k=>{if(hd[k])st.hd[k]=hd[k]});
   if(mode==="pgn"){st.over=hd.Result&&hd.Result!=="*"?hd.Result:"Imported game";st.view=0;const ex=storeImport();
     if(ex&&ex.anal){const a={cls:ex.anal.cls,bestSan:ex.anal.bestSan,bestUci:ex.anal.bestUci,done:true};ex.anal.ev.forEach((e,i)=>a[i]=e);st.anal=a;render()}else{render();analyze()}}else{st.over=null;st.view=hist().length;render()}
@@ -362,15 +363,19 @@ async function analyze(){
   a.done=true;st.anal=a;st.analyzing=false;if(st.gid){const L=loadGames(),r=L.find(g=>g.id===st.gid);if(r){r.anal=packAnal(a);saveGames(L)}}render();
 }
 
-function go(n){st.arrows=[];closePromo();if(st.cv>=0){const b=st.vars[st.cv].base;st.cv=-1;st.ck=0;st.view=b}const h=hist(),L=h.length,v=Math.max(0,Math.min(L,n));if(v===st.view+1)st.anim={from:h[v-1].from,to:h[v-1].to};else if(v===st.view-1)st.anim={from:h[v].to,to:h[v].from};st.view=v;st.sel=null;render()}
+function go(n){st.arrows=[];st.marks={};closePromo();if(st.cv>=0){const b=st.vars[st.cv].base;st.cv=-1;st.ck=0;st.view=b}const h=hist(),L=h.length,v=Math.max(0,Math.min(L,n));if(v===st.view+1)st.anim={from:h[v-1].from,to:h[v-1].to};else if(v===st.view-1)st.anim={from:h[v].to,to:h[v].from};st.view=v;st.sel=null;render()}
 
 B.addEventListener("contextmenu",e=>e.preventDefault());
 const rcCancel=e=>{if(st.promo){st.rcAt=performance.now();e.preventDefault();closePromo();st.sel=null;render();return}if(!(st.drag||st.sel))return;st.rcAt=performance.now();e.preventDefault();if(st.drag){st.drag.cancel=true;st.drag.ghost.remove();const d=st.drag;st.drag=null;st.sel=null;d.cleanup&&d.cleanup();render()}else{st.sel=null;render()}};
 addEventListener("mousedown",e=>{if(e.button===2)rcCancel(e)},true);addEventListener("contextmenu",e=>{if(st.drag||st.sel||st.promo)rcCancel(e)},true);
+let spDown=false;
+const spOk=()=>root.closest(".tabpane").classList.contains("on")&&!/INPUT|TEXTAREA|BUTTON/.test(document.activeElement.tagName);
+addEventListener("keydown",e=>{if(e.code==="Space"&&spOk()){e.preventDefault();spDown=true}});
+addEventListener("keyup",e=>{if(e.code==="Space")spDown=false});addEventListener("blur",()=>{spDown=false});
 B.addEventListener("mousedown",e=>{if(e.button!==2||performance.now()-st.rcAt<60||st.phase!=="game"||(st.over&&!(st.anal&&st.anal.done)))return;const q=e.target.closest(".sq");st.arDown=q?q.dataset.sq:null});
 addEventListener("mouseup",e=>{if(e.button!==2||!st.arDown)return;const t=document.elementFromPoint(e.clientX,e.clientY),q=t&&t.closest&&t.closest("#plB .sq"),a=st.arDown;st.arDown=null;
-  if(!q||q.dataset.sq===a)return;const k=a+q.dataset.sq,i=st.arrows.indexOf(k);if(i<0)st.arrows.push(k);else st.arrows.splice(i,1);render()});
-B.addEventListener("pointerdown",e=>{if(e.button!==0)return;if(st.arrows.length){st.arrows=[];render()}
+  if(!q)return;if(q.dataset.sq===a){const c=e.shiftKey||spDown?"b":"r";if(st.marks[a]===c)delete st.marks[a];else st.marks[a]=c;render();return}const k=a+q.dataset.sq,i=st.arrows.indexOf(k);if(i<0)st.arrows.push(k);else st.arrows.splice(i,1);render()});
+B.addEventListener("pointerdown",e=>{if(e.button!==0)return;if(st.arrows.length||Object.keys(st.marks).length){st.arrows=[];st.marks={};render()}
   const sq=e.target.closest(".sq");if(!sq)return;
   if(!canEx()&&!(live()&&userTurn()))return;
   const s=sq.dataset.sq,p=act().get(s);
@@ -388,7 +393,7 @@ B.addEventListener("pointerdown",e=>{if(e.button!==0)return;if(st.arrows.length)
   }else{st.sel=null;render()}
 });
 
-$("plMoves").addEventListener("click",e=>{const vm=e.target.closest("[data-v]");if(vm){st.cv=+vm.dataset.v;st.ck=+vm.dataset.k;st.arrows=[];st.sel=null;closePromo();render();return}const c=e.target.closest("[data-ply]");if(c)go(+c.dataset.ply)});
+$("plMoves").addEventListener("click",e=>{const vm=e.target.closest("[data-v]");if(vm){st.cv=+vm.dataset.v;st.ck=+vm.dataset.k;st.arrows=[];st.marks={};st.sel=null;closePromo();render();return}const c=e.target.closest("[data-ply]");if(c)go(+c.dataset.ply)});
 root.querySelector(".pl-nav").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const L=hist().length;({first:()=>go(0),prev:()=>step(-1),next:()=>step(1),last:()=>go(L)})[b.dataset.n]()});
 {const G=$("plGraph"),T=$("plTip");
 const evs=e=>!e?"":e.mate!==undefined?(e.mate===0?"#":(e.cp>0?"+":"-")+"M"+Math.abs(e.mate)):(e.cp>=0?"+":"-")+(Math.abs(e.cp)/100).toFixed(1);
@@ -411,8 +416,8 @@ $("plImp").addEventListener("input",()=>{$("plImpErr").textContent=""});$("plImp
 $("plGList").addEventListener("click",e=>{const d=e.target.closest("[data-del]");if(d){delAsk=+d.dataset.del;renderSaved();return}const y=e.target.closest("[data-yes]");if(y){const gid=+y.dataset.yes;saveGames(loadGames().filter(g=>g.id!==gid));try{const dl=JSON.parse(localStorage.getItem("cc_games_del")||"[]");dl.push(gid);localStorage.setItem("cc_games_del",JSON.stringify(dl))}catch(er){}delAsk=null;renderSaved();return}if(e.target.closest("[data-no]")){delAsk=null;renderSaved();return}if(delAsk!==null){delAsk=null;renderSaved();return}const r=e.target.closest("[data-gid]");if(r)openSaved(+r.dataset.gid)});
 $("plCopy").addEventListener("click",async()=>{const t=buildPgn(),b=$("plCopy");let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(e){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{ok=document.execCommand("copy")}catch(e2){}ta.remove()}
   b.textContent=ok?"Copied ✓":"Copy failed";setTimeout(()=>{b.textContent="Copy PGN"},1500)});
-renderSaved();
-const again=()=>{closePromo();resetVars();renderSaved();st.mode="play";st.startFen=STD;st.gen++;st.analGen=(st.analGen||0)+1;st.phase="setup";st.game=new Chess();st.view=0;st.over=null;st.anal=null;st.analyzing=false;st.running=false;st.sel=null;render()};$("plAgain").addEventListener("click",again);$("plAgainTop").addEventListener("click",again);
+renderSaved();setLastWin();
+const again=()=>{closePromo();resetVars();renderSaved();setLastWin();st.mode="play";st.startFen=STD;st.gen++;st.analGen=(st.analGen||0)+1;st.phase="setup";st.game=new Chess();st.view=0;st.over=null;st.anal=null;st.analyzing=false;st.running=false;st.sel=null;render()};$("plAgain").addEventListener("click",again);$("plAgainTop").addEventListener("click",again);
 $("plFlip").addEventListener("click",()=>{st.flip=!st.flip;render()});
 const pop=$("plPop");$("plGear").addEventListener("click",e=>{e.stopPropagation();pop.classList.toggle("on")});document.addEventListener("pointerdown",e=>{if(!e.target.closest("#plPop,#plGear"))pop.classList.remove("on")},true);
 $("plSound").checked=SET.sound;$("plLegal").checked=SET.legal;
