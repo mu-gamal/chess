@@ -303,18 +303,19 @@ function showPromo(from,to){
 async function maybeEngine(){
   if(st.mode!=="play"||st.over||st.game.turn()===st.user)return;
   st.thinking=true;renderStatus();
-  const gen=++st.gen,t0=performance.now();const eng=getPlay();await eng.ready;
+  const gen=++st.gen;const eng=getPlay();await eng.ready;
   if(gen!==st.gen)return;
   if(st.elo>=1320){eng.send("setoption name Skill Level value 20");eng.send("setoption name UCI_LimitStrength value true");eng.send("setoption name UCI_Elo value "+st.elo)}
   else{eng.send("setoption name UCI_LimitStrength value false");eng.send("setoption name Skill Level value "+Math.round((st.elo-1000)/320*4))}
   eng.send("position fen "+st.game.fen());
   const [,inc]=TCS[st.tc];
-  if(st.elo<1320){eng.send("go depth "+(1+Math.round((st.elo-1000)/320*4)))}else{const mt=st.tc==="none"?1000:Math.round(Math.min(2500,Math.max(300,st.clock[st.game.turn()]/40+inc*400)));eng.send("go movetime "+mt)}
+  const go=st.elo<1320?"go depth "+(1+Math.round((st.elo-1000)/320*4)):"go movetime "+(st.tc==="none"?1000:Math.round(Math.min(2500,Math.max(300,st.clock[st.game.turn()]/40+inc*400))));
+  const minThinkMs=1000+Math.random()*2000,thinkStart=performance.now();eng.send(go);
   const l=await eng.wait(x=>x.startsWith("bestmove"));
   if(gen!==st.gen)return;
   st.thinking=false;
   const u=l.split(" ")[1];if(!u||u==="(none)"){render();return}
-  {const wt=1000-(performance.now()-t0);if(wt>0){st.thinking=true;await new Promise(r=>setTimeout(r,wt));if(gen!==st.gen)return;st.thinking=false}}
+  {const wt=minThinkMs-(performance.now()-thinkStart);if(wt>0){st.thinking=true;await new Promise(r=>setTimeout(r,wt));if(gen!==st.gen)return;st.thinking=false}}
   const mv=st.game.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]});
   applied(mv);
 }
