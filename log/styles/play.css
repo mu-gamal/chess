@@ -502,11 +502,6 @@ input[type=range]#plStr {
   font-size: 11px;
   margin-top: 2px;
 }
-.pl-btns {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
 .pl-btn {
   background: var(--card);
   color: var(--text);
@@ -858,13 +853,6 @@ html::-webkit-scrollbar-thumb:hover {
   resize: vertical;
   min-height: 64px;
   display: block;
-}
-.pl-btns {
-  display: flex;
-  gap: 8px;
-}
-.pl-btns .pl-btn {
-  flex: 1;
 }
 #plSaved {
   position: relative;
@@ -1457,6 +1445,15 @@ header>.themebtn,.syncw {
   align-items: center;
   justify-content: center;
   flex: none;
+}
+.pl-top .pl-ico {
+  padding: 0;
+  width: 32px;
+}
+.pl-ico svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 .pl-top .pl-again {
   margin-left: auto;

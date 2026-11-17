@@ -24,9 +24,8 @@ root.innerHTML=`<div class="pl-left"><div class="pl-wrap" id="plWrap"><div class
 </div>
 <div id="plGame" class="pl-sec">
 <div class="pl-clocks" id="plClocks"><div class="pl-clock" id="plClkTop"><span class="n"></span><span class="t"></span></div><div class="pl-clock" id="plClkBot"><span class="n"></span><span class="t"></span></div></div>
-<div class="pl-top"><div class="pl-status" id="plStatus"></div><span class="pl-lvl" id="plLvl"></span><button class="pl-btn" id="plCopy">Copy PGN</button><button class="pl-btn main pl-again" id="plAgainTop">New game</button><div class="pl-rsw"><button class="pl-btn" id="plResign">Resign</button><div class="pl-rpop" id="plModal"><div class="pl-mt">Resign this game?</div><div class="pl-mrow"><button class="pl-btn" id="plMNo">Cancel</button><button class="pl-btn danger" id="plMYes">Resign</button></div></div></div></div>
+<div class="pl-top"><div class="pl-status" id="plStatus"></div><span class="pl-lvl" id="plLvl"></span><button class="pl-btn pl-ico" id="plAnalyze" title="Analyze"><svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/></svg></button><button class="pl-btn" id="plCopy">Copy PGN</button><button class="pl-btn main pl-again" id="plAgainTop">New game</button><div class="pl-rsw"><button class="pl-btn" id="plResign">Resign</button><div class="pl-rpop" id="plModal"><div class="pl-mt">Resign this game?</div><div class="pl-mrow"><button class="pl-btn" id="plMNo">Cancel</button><button class="pl-btn danger" id="plMYes">Resign</button></div></div></div></div>
 <div class="pl-card pl-moves"><div class="pl-open" id="plOpen"></div><div class="pl-mv" id="plMoves"></div><div class="pl-nav"><button data-n="first" title="First"><svg viewBox="0 0 24 24"><path d="M18.4 6.4 17 5l-7 7 7 7 1.4-1.4L12.8 12zM11.4 6.4 10 5l-7 7 7 7 1.4-1.4L5.8 12z"/></svg></button><button data-n="prev" title="Previous"><svg viewBox="0 0 24 24"><path d="M15.4 6.4 14 5l-7 7 7 7 1.4-1.4L9.8 12z"/></svg></button><button data-n="next" title="Next"><svg viewBox="0 0 24 24"><path d="M8.6 17.6 10 19l7-7-7-7-1.4 1.4 5.6 5.6z"/></svg></button><button data-n="last" title="Last"><svg viewBox="0 0 24 24"><path d="M5.6 17.6 7 19l7-7-7-7-1.4 1.4 5.6 5.6zM12.6 17.6 14 19l7-7-7-7-1.4 1.4 5.6 5.6z"/></svg></button></div></div>
-<div class="pl-btns"><button class="pl-btn" id="plAnalyze">Analyze</button><button class="pl-btn main pl-again" id="plAgain">New game</button></div>
 <div class="pl-card pl-anal" id="plAnal"><svg id="plGraph" viewBox="0 0 300 70" preserveAspectRatio="none"></svg><div class="pl-tip" id="plTip"></div><div class="pl-move-head"><div class="pl-best" id="plBest"></div><div class="pl-exw" id="plExW"></div></div><div class="pl-explain-body" id="plExBody"></div><div class="pl-sum" id="plSum"></div></div>
 </div>
 </div>`;
@@ -170,8 +169,8 @@ function renderStatus(){
   if(st.analyzing)t=st.analyzing;
   const pm=st.mode==="play";if(!pm)t=st.analyzing||(st.mode==="fen"?"Analysis board":st.title);
   {const P=$("plStatus");if(!pm&&st.mode==="pgn"&&st.vs&&!st.analyzing)P.innerHTML=vsH(st.vs.w,st.vs.b);else P.textContent=t}$("plLvl").innerHTML=pm?`${eAv(st.gameElo||st.elo)}<b>${st.gameElo||st.elo}</b>`:"";
-  $("plResign").parentElement.style.display=st.over||!pm?"none":"";const dn=!!(st.anal&&st.anal.done);$("plAgain").style.display=pm&&st.over&&!dn?"":"none";$("plAgainTop").style.display=!pm||st.over&&dn?"":"none";
-  const aDone=!!(st.anal&&st.anal.done);$("plAnalyze").textContent=aDone?"Re-analyze":"Analyze";$("plAnalyze").style.display=aDone||(pm&&st.over)?"":"none";$("plCopy").style.display=hist().length&&(st.over||!pm)?"":"none";$("plAnalyze").disabled=!!st.analyzing||hist().length===0;
+  $("plResign").parentElement.style.display=st.over||!pm?"none":"";$("plAgainTop").style.display=!pm||st.over?"":"none";
+  const aDone=!!(st.anal&&st.anal.done);$("plAnalyze").title=aDone?"Re-analyze":"Analyze";$("plAnalyze").style.display=aDone||(pm&&st.over)?"":"none";$("plCopy").style.display=hist().length&&(st.over||!pm)?"":"none";$("plAnalyze").disabled=!!st.analyzing||hist().length===0;
 }
 function renderAnal(){
   const box=$("plAnal");const a=st.anal;
@@ -398,7 +397,7 @@ function classifyMove(o){
   if(isBest||drop<2){
     const sacrifice=hasSoundMaterialSacrifice(o.fenB,o.fenA,o.pvA,o.played);
     const easy=!!(o.l2&&o.l2.mate===undefined&&wpm(o.l2,o.mover)>=winp(500));
-    const brilliant=!easy&&after>=winp(-100)&&sacrifice;
+    const brilliant=!easy&&after>=winp(100)&&sacrifice;
     if(brilliant)return "bril";
     if(isBest&&o.l2&&before-wpm(o.l2,o.mover)>=20)return "great";
   }
@@ -549,7 +548,7 @@ $("plGList").addEventListener("click",e=>{const d=e.target.closest("[data-del]")
 $("plCopy").addEventListener("click",async()=>{const t=buildPgn(),b=$("plCopy");let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(e){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{ok=document.execCommand("copy")}catch(e2){}ta.remove()}
   b.textContent=ok?"Copied ✓":"Copy failed";setTimeout(()=>{b.textContent="Copy PGN"},1500)});
 renderSaved();setLastWin();
-const again=()=>{closePromo();resetVars();renderSaved();setLastWin();st.mode="play";st.startFen=STD;st.gen++;st.analGen=(st.analGen||0)+1;st.phase="setup";st.game=new Chess();st.view=0;st.over=null;st.anal=null;st.analyzing=false;st.running=false;st.sel=null;render()};$("plAgain").addEventListener("click",again);$("plAgainTop").addEventListener("click",again);
+const again=()=>{closePromo();resetVars();renderSaved();setLastWin();st.mode="play";st.startFen=STD;st.gen++;st.analGen=(st.analGen||0)+1;st.phase="setup";st.game=new Chess();st.view=0;st.over=null;st.anal=null;st.analyzing=false;st.running=false;st.sel=null;render()};$("plAgainTop").addEventListener("click",again);
 $("plFlip").addEventListener("click",()=>{st.flip=!st.flip;render()});
 const pop=$("plPop");$("plGear").addEventListener("click",e=>{e.stopPropagation();pop.classList.toggle("on")});document.addEventListener("pointerdown",e=>{if(!e.target.closest("#plPop,#plGear"))pop.classList.remove("on")},true);
 $("plSound").checked=SET.sound;$("plLegal").checked=SET.legal;
