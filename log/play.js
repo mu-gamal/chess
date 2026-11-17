@@ -309,10 +309,10 @@ async function maybeEngine(){
   const gen=++st.gen;const eng=getPlay();await eng.ready;
   if(gen!==st.gen)return;
   if(st.elo>=1320){eng.send("setoption name Skill Level value 20");eng.send("setoption name UCI_LimitStrength value true");eng.send("setoption name UCI_Elo value "+st.elo)}
-  else{eng.send("setoption name UCI_LimitStrength value false");eng.send("setoption name Skill Level value "+Math.round((st.elo-1000)/320*4))}
+  else{eng.send("setoption name UCI_LimitStrength value false");eng.send("setoption name Skill Level value "+Math.round((st.elo-1000)/100))}
   eng.send("position fen "+st.game.fen());
   const [,inc]=TCS[st.tc];
-  const go=st.elo<1320?"go depth "+(1+Math.round((st.elo-1000)/320*4)):"go movetime "+(st.tc==="none"?1000:Math.round(Math.min(2500,Math.max(300,st.clock[st.game.turn()]/40+inc*400))));
+  const go=st.elo<1320?"go depth "+(1+Math.round((st.elo-1000)/100)):"go movetime "+(st.tc==="none"?1000:Math.round(Math.min(2500,Math.max(300,st.clock[st.game.turn()]/40+inc*400))));
   const minThinkMs=1000+Math.random()*2000,thinkStart=performance.now();eng.send(go);
   const l=await eng.wait(x=>x.startsWith("bestmove"));
   if(gen!==st.gen)return;
