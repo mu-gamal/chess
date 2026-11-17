@@ -183,12 +183,12 @@ function renderAnal(){
   const x=n?st.view/n*W:0;
   $("plGraph").innerHTML=`<polygon class="g-area" points="0,${H} ${line} ${W},${H}"/><line class="g-mid" x1="0" y1="${H/2}" x2="${W}" y2="${H/2}"/><polyline class="g-line" points="${line}"/><line class="g-cur" x1="${x}" y1="0" x2="${x}" y2="${H}"/><line class="g-hov" id="gHov" x1="0" y1="0" x2="0" y2="${H}" style="display:none"/>`;
   const c=a.cls[st.view],bm=a.bestSan[st.view];
-  $("plBest").innerHTML=st.view>0&&(c==="book"||c==="best"||c==="bril"||c==="great")?`<span class="${c}">${MARK[c][1]}</span>`:st.view>0&&c?`<span class="${c}">${MARK[c][1]}</span>${bm?`, best was <b>${bm}</b>`:""}`:"";
+  $("plBest").innerHTML=st.view>0&&(c==="book"||c==="best"||c==="bril"||c==="great")?`${badge(c)}<span class="${c}">${MARK[c][1]}</span>`:st.view>0&&c?`${badge(c)}<span class="${c}">${MARK[c][1]}</span>${bm?`, best was <b>${bm}</b>`:""}`:"";
   renderExplain();
   const metrics=[['bril','Brilliant'],['great','Great'],['best','Best'],['good','Good'],['inacc','Inaccuracies'],['miss','Misses'],['blun','Blunders']];
   const sides=st.mode==="pgn"?[["White","w"],["Black","b"]]:[[st.user==="w"?"White":"Black",st.user]];
   const rows=sides.map(([label,color])=>{const counts=Object.fromEntries(metrics.map(([key])=>[key,0]));for(let i=1;i<=n;i++)if(h[i-1].color===color&&counts[a.cls[i]]!==undefined)counts[a.cls[i]]++;const player=(st.vs&&st.vs[color])||(st.hd&&st.hd[label])||"You";return {label,color,player,counts}});
-  $("plSum").innerHTML=`<div class="pl-sum-frame"><table class="pl-sum-table"><thead><tr><th aria-label="Player"></th>${metrics.map(([key,name])=>`<th class="${key}" title="${name}"><span class="pl-sum-label">${name}</span></th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr><th class="${r.color==="w"?"pw":"pb"}" title="${r.label}">${esc(r.player)}</th>${metrics.map(([key])=>`<td class="${key}">${r.counts[key]}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+  $("plSum").innerHTML=`<div class="pl-sum-frame"><table class="pl-sum-table"><thead><tr><th aria-label="Player"></th>${metrics.map(([key,name])=>`<th class="${key}" title="${name}"><span class="pl-sum-label">${name}</span></th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr><th class="${r.color==="w"?"pw":"pb"}" title="${esc(r.player)}">${esc(r.player)}</th>${metrics.map(([key])=>`<td class="${key}">${r.counts[key]}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 
 const RES=()=>/you win/i.test(st.over)?(st.user==="w"?"1-0":"0-1"):/engine wins|you resigned/i.test(st.over)?(st.user==="w"?"0-1":"1-0"):/draw/i.test(st.over)?"1/2-1/2":"*";
