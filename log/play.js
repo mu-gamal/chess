@@ -171,7 +171,7 @@ function renderStatus(){
   const pm=st.mode==="play";if(!pm)t=st.analyzing||(st.mode==="fen"?"Analysis board":st.title);
   {const P=$("plStatus");if(!pm&&st.mode==="pgn"&&st.vs&&!st.analyzing)P.innerHTML=vsH(st.vs.w,st.vs.b);else P.textContent=t}$("plLvl").innerHTML=pm?`${eAv(st.gameElo||st.elo)}<b>${st.gameElo||st.elo}</b>`:"";
   $("plResign").parentElement.style.display=st.over||!pm?"none":"";const dn=!!(st.anal&&st.anal.done);$("plAgain").style.display=pm&&st.over&&!dn?"":"none";$("plAgainTop").style.display=!pm||st.over&&dn?"":"none";
-  $("plAnalyze").style.display=pm&&st.over&&!(st.anal&&st.anal.done)?"":"none";$("plCopy").style.display=hist().length&&(st.over||!pm)?"":"none";$("plAnalyze").disabled=!!st.analyzing||hist().length===0;
+  const aDone=!!(st.anal&&st.anal.done);$("plAnalyze").textContent=aDone?"Re-analyze":"Analyze";$("plAnalyze").style.display=aDone||(pm&&st.over)?"":"none";$("plCopy").style.display=hist().length&&(st.over||!pm)?"":"none";$("plAnalyze").disabled=!!st.analyzing||hist().length===0;
 }
 function renderAnal(){
   const box=$("plAnal");const a=st.anal;
@@ -202,7 +202,23 @@ function buildPgn(){
 }
 const loadGames=()=>{try{return JSON.parse(localStorage.getItem("cc_games")||"[]")}catch(e){return []}};
 const saveGames=a=>{a=a.slice();while(a.length){try{localStorage.setItem("cc_games",JSON.stringify(a));return}catch(e){a.pop()}}try{localStorage.setItem("cc_games","[]")}catch(e){}};let delAsk=null;
-function packAnal(a){const ev=[];for(let i=0;i<=hist().length;i++)ev.push(a[i]);return {cls:a.cls,bestSan:a.bestSan,bestUci:a.bestUci||[],ev}}
+function packAnal(a){const ev=[];for(let i=0;i<=hist().length;i++)ev.push(a[i]);return {ev,l2:a.l2,pv:a.pv,bestUci:a.bestUci||[]}}
+function buildCls(a,h){
+  const n=h.length,g=newG(),fens=[g.fen()];h.forEach(m=>{g.move(m.san);fens.push(g.fen())});
+  a.cls=[];a.bestSan=[];
+  for(let i=1;i<=n;i++){const u=a.bestUci&&a.bestUci[i];if(u){try{a.bestSan[i]=new Chess(fens[i-1]).move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]}).san}catch(e){}}}
+  const BK=window.OPENINGS||{};let inBook=true;
+  for(let i=1;i<=n;i++){
+    if(inBook&&(fens[i].split(" ").slice(0,4).join(" ") in BK)){a.cls[i]="book";a.bestSan[i]=null;continue}inBook=false;
+    const played=h[i-1].from+h[i-1].to+(h[i-1].promotion||"");
+    a.cls[i]=classifyMove({eB:a[i-1],eA:a[i],best:a.bestUci&&a.bestUci[i],l2:a.l2[i-1],pvA:a.pv[i],played,mover:h[i-1].color,fenB:fens[i-1],fenA:fens[i],prev:a.cls[i-1]});
+    if(/^(bril|great|best)$/.test(a.cls[i]))a.bestSan[i]=null;
+  }
+}
+function unpackAnal(r,h){
+  if(!r||!r.ev||!r.l2||!r.pv)return null;
+  const a={done:true,l2:r.l2,pv:r.pv,bestUci:r.bestUci||[]};r.ev.forEach((e,i)=>a[i]=e);buildCls(a,h);return a;
+}
 function storeGame(){const a=loadGames(),id=Date.now();a.unshift({id,date:id,user:st.user,elo:st.gameElo,tc:st.tc,res:RES(),msg:st.over,moves:hist().map(m=>m.san),times:st.times.slice()});saveGames(a);st.gid=id;renderSaved()}
 function storeImport(){
   const a=loadGames(),mv=hist().map(m=>m.san),W=st.hd.White||"White",Bk=st.hd.Black||"Black",res=st.hd.Result||"*";
@@ -230,7 +246,7 @@ function openSaved(id){
   st.mode="pgn";st.startFen=STD;st.arrows=[];st.marks={};st.game=g;st.user=r.user;st.flip=r.user==="b";st.gameElo=r.elo;st.running=false;st.thinking=false;st.sel=null;st.analyzing=false;st.times=(r.times||[]).slice();st.phase="game";st.gid=r.id;
   if(r.kind==="pgn"){st.startFen=r.startFen||STD;st.user="w";st.flip=false;st.title=`${r.white} vs ${r.black}`;st.vs={w:r.white,b:r.black};st.hd={White:r.white,Black:r.black,Result:r.res};st.over=r.res!=="*"?r.res:"Imported game"}
   else{st.title=`You vs Stockfish (${r.elo})`;st.vs=r.user==="w"?{w:"You",b:`Stockfish (${r.elo})`}:{w:`Stockfish (${r.elo})`,b:"You"};st.hd={White:r.user==="w"?"You":`Stockfish (${r.elo})`,Black:r.user==="b"?"You":`Stockfish (${r.elo})`,Result:r.res};st.over=r.msg||r.res}st.view=hist().length;
-  if(r.anal){const a={cls:r.anal.cls,bestSan:r.anal.bestSan,bestUci:r.anal.bestUci,done:true};r.anal.ev.forEach((e,i)=>a[i]=e);st.anal=a;render()}else{st.anal=null;render();analyze()}
+  const a=unpackAnal(r.anal,hist());if(a){st.anal=a;render()}else{st.anal=null;render();analyze()}
 }
 function finish(msg){setTimeout(()=>sfx("game-end",()=>chime("end")),250);st.over=msg;st.running=false;st.thinking=false;st.gen++;try{playEng&&playEng.send("stop")}catch(e){}if(st.mode==="play"&&hist().length)storeGame();render()}
 function checkEnd(){
@@ -351,7 +367,7 @@ function importGame(){
   resetVars();st.mode=mode;st.arrows=[];st.marks={};st.game=g;st.user="w";st.flip=false;st.running=false;st.thinking=false;st.sel=null;st.anal=null;st.analyzing=false;st.times=mode==="pgn"&&typeof pgnTimes!=="undefined"?pgnTimes:[];st.phase="game";
   st.title=hd.White&&hd.Black?`${hd.White} vs ${hd.Black}`:"Imported game";st.vs=hd.White&&hd.Black?{w:hd.White,b:hd.Black}:null;st.gid=null;st.hd={};["White","Black","Result","Date","Event"].forEach(k=>{if(hd[k])st.hd[k]=hd[k]});
   if(mode==="pgn"){st.over=hd.Result&&hd.Result!=="*"?hd.Result:"Imported game";st.view=0;const ex=storeImport();
-    if(ex&&ex.anal){const a={cls:ex.anal.cls,bestSan:ex.anal.bestSan,bestUci:ex.anal.bestUci,done:true};ex.anal.ev.forEach((e,i)=>a[i]=e);st.anal=a;render()}else{render();analyze()}}else{st.over=null;st.view=hist().length;render()}
+    const a=ex&&unpackAnal(ex.anal,hist());if(a){st.anal=a;render()}else{render();analyze()}}else{st.over=null;st.view=hist().length;render()}
 }
 
 async function evalPos(eng,fen,depth,mpv,tm){
@@ -465,21 +481,15 @@ async function analyze(){
   const ag=st.analGen=(st.analGen||0)+1;
   const eng=getAnal();await eng.ready;
   eng.send("setoption name UCI_LimitStrength value false");
-  const a={cls:[],bestSan:[]};const n=h.length;const g=newG();const fens=[g.fen()];
+  const a={bestUci:[]};const n=h.length;const g=newG();const fens=[g.fen()];
   h.forEach(m=>{g.move(m.san);fens.push(g.fen())});
   for(let i=0;i<=n;i++){
     if(ag!==st.analGen)return;
     st.analyzing=`Analyzing ${i}/${n}`;renderStatus();
-    const r=await evalPos(eng,fens[i],20,2);a[i]=r.e;const u=r.u;a.l2=a.l2||[];a.pv=a.pv||[];a.l2[i]=r.lines[1]?r.lines[1].e:null;a.pv[i]=r.lines[0]?r.lines[0].pv:[];
-    if(u&&i<n){try{const t=new Chess(fens[i]);a.bestSan[i+1]=t.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]}).san;a.bestUci=a.bestUci||[];a.bestUci[i+1]=u}catch(e){}}
+    const r=await evalPos(eng,fens[i],20,2);a[i]=r.e;const u=r.u;a.l2=a.l2||[];a.pv=a.pv||[];a.l2[i]=r.lines[1]?r.lines[1].e:null;a.pv[i]=r.lines[0]?r.lines[0].pv.slice(0,1):[];
+    if(u&&i<n)a.bestUci[i+1]=u;
   }
-  const BK=window.OPENINGS||{};let inBook=true;
-  for(let i=1;i<=n;i++){
-    if(inBook&&(fens[i].split(" ").slice(0,4).join(" ") in BK)){a.cls[i]="book";a.bestSan[i]=null;continue}inBook=false;
-    const played=h[i-1].from+h[i-1].to+(h[i-1].promotion||"");
-    a.cls[i]=classifyMove({eB:a[i-1],eA:a[i],best:a.bestUci&&a.bestUci[i],l2:a.l2[i-1],pvA:a.pv[i],played,mover:h[i-1].color,fenB:fens[i-1],fenA:fens[i],prev:a.cls[i-1]});
-    if(/^(bril|great|best)$/.test(a.cls[i]))a.bestSan[i]=null;
-  }
+  buildCls(a,h);
   a.done=true;st.anal=a;st.analyzing=false;if(st.gid){const L=loadGames(),r=L.find(g=>g.id===st.gid);if(r){r.anal=packAnal(a);saveGames(L)}}render();
 }
 
