@@ -801,10 +801,17 @@ html::-webkit-scrollbar-thumb:hover {
   fill: none;
   stroke: #ffaa00;
   stroke-width: .22;
+  stroke-linecap: round;
   stroke-linejoin: miter;
 }
 .pl-arrow polygon {
   fill: #ffaa00;
+}
+.pl-arrow.pv g {
+  opacity: .5;
+}
+.pl-arrow.pv polyline {
+  stroke-width: .21;
 }
 .pl-in {
   width: 100%;

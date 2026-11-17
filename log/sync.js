@@ -1,5 +1,5 @@
 (()=>{
-const KEYS=["cc_games","cc_games_del","cc_daily","cc_play","cc_theme","cc_anal_reset"];
+const KEYS=["cc_games","cc_games_del","cc_daily","cc_play","cc_theme"];
 const FILE="chess-crack-sync.json";
 const LS=localStorage,set0=Storage.prototype.setItem,get=k=>LS.getItem(k),put=(k,v)=>set0.call(LS,k,v);
 const tok=()=>get("cc_sync_token"),meta=()=>{try{return JSON.parse(get("cc_sync_meta")||"{}")}catch(e){return {}}};
@@ -11,14 +11,12 @@ function local(){const data={},m=meta();KEYS.forEach(k=>{const v=get(k);if(v!==n
 function merge(a,b){
   const out={data:{},ts:{}};
   const del=[...new Set([...(J(a.data.cc_games_del)||[]),...(J(b.data.cc_games_del)||[])])];
-  const g=new Map();[...(J(b.data.cc_games)||[]),...(J(a.data.cc_games)||[])].forEach(x=>{const o=g.get(x.id),xv=x.analysisGeneration||0,ov=o&&o.analysisGeneration||0;if(!o||xv>ov||xv===ov&&!o.anal&&x.anal)g.set(x.id,x)});
-  const reset=Math.max(+a.data.cc_anal_reset||0,+b.data.cc_anal_reset||0);
-  const games=[...g.values()].filter(x=>!del.includes(x.id)).map(x=>{if(reset){if((x.anal&&x.anal.version||0)<reset)delete x.anal;x.analysisGeneration=Math.max(x.analysisGeneration||0,reset)}return x}).sort((x,y)=>y.id-x.id);
+  const g=new Map();[...(J(b.data.cc_games)||[]),...(J(a.data.cc_games)||[])].forEach(x=>{const o=g.get(x.id);if(!o||(!o.anal&&x.anal))g.set(x.id,x)});
+  const games=[...g.values()].filter(x=>!del.includes(x.id)).sort((x,y)=>y.id-x.id);
   if(games.length||a.data.cc_games!==undefined||b.data.cc_games!==undefined)out.data.cc_games=JSON.stringify(games);
   if(del.length)out.data.cc_games_del=JSON.stringify(del);
   ["cc_games","cc_games_del"].forEach(k=>{out.ts[k]=Math.max(a.ts[k]||0,b.ts[k]||0)});
   KEYS.slice(2).forEach(k=>{const ta=a.ts[k]||0,tb=b.ts[k]||0,src=a.data[k]===undefined?b:b.data[k]===undefined?a:ta>=tb?a:b;if(src.data[k]!==undefined){out.data[k]=src.data[k];out.ts[k]=Math.max(ta,tb)}});
-  if(reset){out.data.cc_anal_reset=String(reset);out.ts.cc_anal_reset=Math.max(a.ts.cc_anal_reset||0,b.ts.cc_anal_reset||0)}
   return out;
 }
 const same=(x,y)=>KEYS.every(k=>(x.data[k]??null)===(y.data[k]??null));

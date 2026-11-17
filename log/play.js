@@ -97,17 +97,17 @@ function renderCaps(g){
   const top=st.flip?"w":"b",bot=st.flip?"b":"w";$("plCapT").innerHTML=st.phase==="setup"?"":box(top);$("plCapB").innerHTML=st.phase==="setup"?"":box(bot);
 }
 
-function arrows(list){
+function arrows(list,pv){
   if(!list.length)return "";
   const xy=q=>{let f=FILES.indexOf(q[0]),r=8-+q[1];if(st.flip){f=7-f;r=7-r}return [f+.5,r+.5]};
   const one=u=>{const [x1,y1]=xy(u.slice(0,2)),[x2,y2]=xy(u.slice(2,4));const dx=x2-x1,dy=y2-y1;
     const pts=[[x1,y1]];if(Math.abs(dx)*Math.abs(dy)===2){Math.abs(dx)>Math.abs(dy)?pts.push([x2,y1]):pts.push([x1,y2])}pts.push([x2,y2]);
     const [ax,ay]=pts[pts.length-2],L=Math.hypot(x2-ax,y2-ay),ux=(x2-ax)/L,uy=(y2-ay)/L,px=-uy,py=ux;
     const [sx,sy]=pts[1],L0=Math.hypot(sx-x1,sy-y1);pts[0]=[x1+(sx-x1)/L0*.3,y1+(sy-y1)/L0*.3];
-    const hl=.42,hh=.26,bx=x2-ux*hl,by=y2-uy*hl;pts[pts.length-1]=[bx+ux*.02,by+uy*.02];
+    const hl=pv?.34:.42,hh=pv?.19:.26,bx=x2-ux*hl,by=y2-uy*hl;pts[pts.length-1]=[bx+ux*.02,by+uy*.02];
     const f=v=>v.toFixed(3);
     return `<g><polyline points="${pts.map(p=>p.map(f).join(",")).join(" ")}"/><polygon points="${f(bx+px*hh)},${f(by+py*hh)} ${f(x2)},${f(y2)} ${f(bx-px*hh)},${f(by-py*hh)}"/></g>`};
-  return `<svg class="pl-arrow" viewBox="0 0 8 8">${list.map(one).join("")}</svg>`;
+  return `<svg class="pl-arrow${pv?" pv":""}" viewBox="0 0 8 8">${list.map(one).join("")}</svg>`;
 }
 function winp(cp){return 50+50*(2/(1+Math.exp(-0.00368208*cp))-1)}
 function evalOf(i){return st.anal&&st.anal[i]}
@@ -202,9 +202,7 @@ function buildPgn(){
 }
 const loadGames=()=>{try{return JSON.parse(localStorage.getItem("cc_games")||"[]")}catch(e){return []}};
 const saveGames=a=>{a=a.slice();while(a.length){try{localStorage.setItem("cc_games",JSON.stringify(a));return}catch(e){a.pop()}}try{localStorage.setItem("cc_games","[]")}catch(e){}};let delAsk=null;
-const ANALYSIS_VERSION=6;
-function packAnal(a){const ev=[];for(let i=0;i<=hist().length;i++)ev.push(a[i]);return {version:ANALYSIS_VERSION,cls:a.cls,bestSan:a.bestSan,bestUci:a.bestUci||[],ev}}
-function clearOldAnalyses(){let reset=0;try{reset=+(localStorage.getItem("cc_anal_reset")||0)}catch(e){}if(reset>=ANALYSIS_VERSION)return;const games=loadGames();for(const g of games){delete g.anal;g.analysisGeneration=ANALYSIS_VERSION}try{localStorage.setItem("cc_games",JSON.stringify(games));localStorage.setItem("cc_anal_reset",String(ANALYSIS_VERSION))}catch(e){}}
+function packAnal(a){const ev=[];for(let i=0;i<=hist().length;i++)ev.push(a[i]);return {cls:a.cls,bestSan:a.bestSan,bestUci:a.bestUci||[],ev}}
 function storeGame(){const a=loadGames(),id=Date.now();a.unshift({id,date:id,user:st.user,elo:st.gameElo,tc:st.tc,res:RES(),msg:st.over,moves:hist().map(m=>m.san),times:st.times.slice()});saveGames(a);st.gid=id;renderSaved()}
 function storeImport(){
   const a=loadGames(),mv=hist().map(m=>m.san),W=st.hd.White||"White",Bk=st.hd.Black||"Black",res=st.hd.Result||"*";
@@ -232,7 +230,7 @@ function openSaved(id){
   st.mode="pgn";st.startFen=STD;st.arrows=[];st.marks={};st.game=g;st.user=r.user;st.flip=r.user==="b";st.gameElo=r.elo;st.running=false;st.thinking=false;st.sel=null;st.analyzing=false;st.times=(r.times||[]).slice();st.phase="game";st.gid=r.id;
   if(r.kind==="pgn"){st.startFen=r.startFen||STD;st.user="w";st.flip=false;st.title=`${r.white} vs ${r.black}`;st.vs={w:r.white,b:r.black};st.hd={White:r.white,Black:r.black,Result:r.res};st.over=r.res!=="*"?r.res:"Imported game"}
   else{st.title=`You vs Stockfish (${r.elo})`;st.vs=r.user==="w"?{w:"You",b:`Stockfish (${r.elo})`}:{w:`Stockfish (${r.elo})`,b:"You"};st.hd={White:r.user==="w"?"You":`Stockfish (${r.elo})`,Black:r.user==="b"?"You":`Stockfish (${r.elo})`,Result:r.res};st.over=r.msg||r.res}st.view=hist().length;
-  if(r.anal&&r.anal.version===ANALYSIS_VERSION){const a={cls:r.anal.cls,bestSan:r.anal.bestSan,bestUci:r.anal.bestUci,done:true};r.anal.ev.forEach((e,i)=>a[i]=e);st.anal=a;render()}else{st.anal=null;render();analyze()}
+  if(r.anal){const a={cls:r.anal.cls,bestSan:r.anal.bestSan,bestUci:r.anal.bestUci,done:true};r.anal.ev.forEach((e,i)=>a[i]=e);st.anal=a;render()}else{st.anal=null;render();analyze()}
 }
 function finish(msg){setTimeout(()=>sfx("game-end",()=>chime("end")),250);st.over=msg;st.running=false;st.thinking=false;st.gen++;try{playEng&&playEng.send("stop")}catch(e){}if(st.mode==="play"&&hist().length)storeGame();render()}
 function checkEnd(){
@@ -353,7 +351,7 @@ function importGame(){
   resetVars();st.mode=mode;st.arrows=[];st.marks={};st.game=g;st.user="w";st.flip=false;st.running=false;st.thinking=false;st.sel=null;st.anal=null;st.analyzing=false;st.times=mode==="pgn"&&typeof pgnTimes!=="undefined"?pgnTimes:[];st.phase="game";
   st.title=hd.White&&hd.Black?`${hd.White} vs ${hd.Black}`:"Imported game";st.vs=hd.White&&hd.Black?{w:hd.White,b:hd.Black}:null;st.gid=null;st.hd={};["White","Black","Result","Date","Event"].forEach(k=>{if(hd[k])st.hd[k]=hd[k]});
   if(mode==="pgn"){st.over=hd.Result&&hd.Result!=="*"?hd.Result:"Imported game";st.view=0;const ex=storeImport();
-    if(ex&&ex.anal&&ex.anal.version===ANALYSIS_VERSION){const a={cls:ex.anal.cls,bestSan:ex.anal.bestSan,bestUci:ex.anal.bestUci,done:true};ex.anal.ev.forEach((e,i)=>a[i]=e);st.anal=a;render()}else{render();analyze()}}else{st.over=null;st.view=hist().length;render()}
+    if(ex&&ex.anal){const a={cls:ex.anal.cls,bestSan:ex.anal.bestSan,bestUci:ex.anal.bestUci,done:true};ex.anal.ev.forEach((e,i)=>a[i]=e);st.anal=a;render()}else{render();analyze()}}else{st.over=null;st.view=hist().length;render()}
 }
 
 async function evalPos(eng,fen,depth,mpv,tm){
@@ -482,7 +480,7 @@ async function analyze(){
     a.cls[i]=classifyMove({eB:a[i-1],eA:a[i],best:a.bestUci&&a.bestUci[i],l2:a.l2[i-1],pvA:a.pv[i],played,mover:h[i-1].color,fenB:fens[i-1],fenA:fens[i],prev:a.cls[i-1]});
     if(/^(bril|great|best)$/.test(a.cls[i]))a.bestSan[i]=null;
   }
-  a.done=true;st.anal=a;st.analyzing=false;if(st.gid){const L=loadGames(),r=L.find(g=>g.id===st.gid);if(r){r.analysisGeneration=ANALYSIS_VERSION;r.anal=packAnal(a);saveGames(L)}}render();
+  a.done=true;st.anal=a;st.analyzing=false;if(st.gid){const L=loadGames(),r=L.find(g=>g.id===st.gid);if(r){r.anal=packAnal(a);saveGames(L)}}render();
 }
 
 function go(n){st.arrows=[];st.marks={};closePromo();if(st.cv>=0){const b=st.vars[st.cv].base;st.cv=-1;st.ck=0;st.view=b}const h=hist(),L=h.length,v=Math.max(0,Math.min(L,n));if(v===st.view+1)st.anim={from:h[v-1].from,to:h[v-1].to};else if(v===st.view-1)st.anim={from:h[v].to,to:h[v].from};st.view=v;st.sel=null;render()}
@@ -495,7 +493,8 @@ const spOk=()=>root.closest(".tabpane").classList.contains("on")&&!/INPUT|TEXTAR
 addEventListener("keydown",e=>{if(e.code==="Space"&&spOk()){e.preventDefault();spDown=true}});
 addEventListener("keyup",e=>{if(e.code==="Space")spDown=false});addEventListener("blur",()=>{spDown=false});
 B.addEventListener("mousedown",e=>{if(e.button!==2||performance.now()-st.rcAt<60||st.phase!=="game"||(st.over&&!(st.anal&&st.anal.done)))return;const q=e.target.closest(".sq");st.arDown=q?q.dataset.sq:null});
-addEventListener("mouseup",e=>{if(e.button!==2||!st.arDown)return;const t=document.elementFromPoint(e.clientX,e.clientY),q=t&&t.closest&&t.closest("#plB .sq"),a=st.arDown;st.arDown=null;
+addEventListener("mousemove",e=>{if(!st.arDown)return;const t=document.elementFromPoint(e.clientX,e.clientY),q=t&&t.closest&&t.closest("#plB .sq"),o=B.querySelector(".pl-arrow.pv");if(o)o.remove();if(q&&q.dataset.sq!==st.arDown)B.insertAdjacentHTML("beforeend",arrows([st.arDown+q.dataset.sq],true))});
+addEventListener("mouseup",e=>{if(e.button!==2||!st.arDown)return;const pvEl=B.querySelector(".pl-arrow.pv");if(pvEl)pvEl.remove();const t=document.elementFromPoint(e.clientX,e.clientY),q=t&&t.closest&&t.closest("#plB .sq"),a=st.arDown;st.arDown=null;
   if(!q)return;if(q.dataset.sq===a){const c=e.shiftKey||spDown?"b":"r";if(st.marks[a]===c)delete st.marks[a];else st.marks[a]=c;render();return}const k=a+q.dataset.sq,i=st.arrows.indexOf(k);if(i<0)st.arrows.push(k);else st.arrows.splice(i,1);render()});
 B.addEventListener("pointerdown",e=>{if(e.button!==0)return;const s0=(e.target.closest(".sq")||{}).dataset;if(st.arrows.length||Object.keys(st.marks).length){st.arrows=[];st.marks={};render()}
   const sq=s0&&s0.sq?B.querySelector(`.sq[data-sq="${s0.sq}"]`):null;if(!sq)return;
@@ -539,7 +538,7 @@ $("plImp").addEventListener("input",()=>{$("plImpErr").textContent=""});$("plImp
 $("plGList").addEventListener("click",e=>{const d=e.target.closest("[data-del]");if(d){delAsk=+d.dataset.del;renderSaved();return}const y=e.target.closest("[data-yes]");if(y){const gid=+y.dataset.yes;saveGames(loadGames().filter(g=>g.id!==gid));try{const dl=JSON.parse(localStorage.getItem("cc_games_del")||"[]");dl.push(gid);localStorage.setItem("cc_games_del",JSON.stringify(dl))}catch(er){}delAsk=null;renderSaved();return}if(e.target.closest("[data-no]")){delAsk=null;renderSaved();return}if(delAsk!==null){delAsk=null;renderSaved();return}const r=e.target.closest("[data-gid]");if(r)openSaved(+r.dataset.gid)});
 $("plCopy").addEventListener("click",async()=>{const t=buildPgn(),b=$("plCopy");let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(e){const ta=document.createElement("textarea");ta.value=t;document.body.appendChild(ta);ta.select();try{ok=document.execCommand("copy")}catch(e2){}ta.remove()}
   b.textContent=ok?"Copied ✓":"Copy failed";setTimeout(()=>{b.textContent="Copy PGN"},1500)});
-clearOldAnalyses();renderSaved();setLastWin();
+renderSaved();setLastWin();
 const again=()=>{closePromo();resetVars();renderSaved();setLastWin();st.mode="play";st.startFen=STD;st.gen++;st.analGen=(st.analGen||0)+1;st.phase="setup";st.game=new Chess();st.view=0;st.over=null;st.anal=null;st.analyzing=false;st.running=false;st.sel=null;render()};$("plAgain").addEventListener("click",again);$("plAgainTop").addEventListener("click",again);
 $("plFlip").addEventListener("click",()=>{st.flip=!st.flip;render()});
 const pop=$("plPop");$("plGear").addEventListener("click",e=>{e.stopPropagation();pop.classList.toggle("on")});document.addEventListener("pointerdown",e=>{if(!e.target.closest("#plPop,#plGear"))pop.classList.remove("on")},true);
