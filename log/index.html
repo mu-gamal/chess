@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chess</title>
 <link rel="icon" id="favicon" href="">
-<link rel="stylesheet" href="styles/base.css">
-<link rel="stylesheet" href="styles/sections.css">
-<link rel="stylesheet" href="styles/training.css">
-<link rel="stylesheet" href="styles/play.css?v=20">
-<script src="sync.js"></script>
+<link rel="stylesheet" href="styles/base.css?v=bac5a25a">
+<link rel="stylesheet" href="styles/sections.css?v=bac5a25a">
+<link rel="stylesheet" href="styles/training.css?v=bac5a25a">
+<link rel="stylesheet" href="styles/play.css?v=bac5a25a">
+<script src="sync.js?v=bac5a25a"></script>
 <script>try{if(localStorage.getItem("cc_theme")==="dark")document.documentElement.dataset.theme="dark"}catch(e){}</script>
 </head>
 <body>
@@ -37,9 +37,9 @@
   <!-- AppContent: populated by the existing renderer -->
   <div id="app"></div>
 </div>
-<script src="pieces.js"></script>
-<script src="data.js"></script>
-<script src="evals.js"></script>
+<script src="pieces.js?v=bac5a25a"></script>
+<script src="data.js?v=bac5a25a"></script>
+<script src="evals.js?v=bac5a25a"></script>
 <script>
 const ST={done:"Done",active:"In progress",pending:"Pending"};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -117,6 +117,6 @@ render(window.LOG);
 </script>
 <script src="lib/chess.min.js"></script>
 <script src="lib/openings.js"></script>
-<script src="play.js?v=13"></script>
+<script src="play.js?v=bac5a25a"></script>
 </body>
 </html>

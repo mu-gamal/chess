@@ -616,6 +616,7 @@ html::-webkit-scrollbar-thumb:hover {
 .pl-mv {
   flex: 1;
   overflow: auto;
+  overflow-x: hidden;
   font-size: 14px;
   min-height: 60px;
 }
@@ -1299,6 +1300,7 @@ html::-webkit-scrollbar-thumb:hover {
   line-height: 1.7;
   color: var(--muted);
   background: rgba(0,0,0,.12);
+  overflow-wrap: anywhere;
 }
 .mvvar .vn {
   margin: 0 3px 0 6px;
@@ -1309,6 +1311,7 @@ html::-webkit-scrollbar-thumb:hover {
   margin-left: 0;
 }
 .mvvar .vm {
+  display: inline-block;
   padding: 1px 5px;
   border-radius: 4px;
   cursor: pointer;

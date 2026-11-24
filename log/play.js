@@ -185,8 +185,8 @@ function renderAnal(){
   $("plBest").innerHTML=st.view>0&&(c==="book"||c==="best"||c==="bril"||c==="great")?`${badge(c)}<span class="${c}">${MARK[c][1]}</span>`:st.view>0&&c?`${badge(c)}<span class="${c}">${MARK[c][1]}</span>${bm?`, best was <b>${bm}</b>`:""}`:"";
   renderExplain();
   const metrics=[['bril','Brilliant'],['great','Great'],['best','Best'],['good','Good'],['inacc','Inaccuracies'],['miss','Misses'],['blun','Blunders']];
-  const sides=st.mode==="pgn"?[["White","w"],["Black","b"]]:[[st.user==="w"?"White":"Black",st.user]];
-  const rows=sides.map(([label,color])=>{const counts=Object.fromEntries(metrics.map(([key])=>[key,0]));for(let i=1;i<=n;i++)if(h[i-1].color===color&&counts[a.cls[i]]!==undefined)counts[a.cls[i]]++;const player=(st.vs&&st.vs[color])||(st.hd&&st.hd[label])||"You";return {label,color,player,counts}});
+  const sides=[["White","w"],["Black","b"]];
+  const rows=sides.map(([label,color])=>{const counts=Object.fromEntries(metrics.map(([key])=>[key,0]));for(let i=1;i<=n;i++)if(h[i-1].color===color&&counts[a.cls[i]]!==undefined)counts[a.cls[i]]++;const player=(st.vs&&st.vs[color])||(st.hd&&st.hd[label])||(st.mode==="play"&&st.user!==color?`Stockfish (${st.gameElo||st.elo})`:"You");return {label,color,player,counts}});
   $("plSum").innerHTML=`<div class="pl-sum-frame"><table class="pl-sum-table"><thead><tr><th aria-label="Player"></th>${metrics.map(([key,name])=>`<th class="${key}" title="${name}"><span class="pl-sum-label">${name}</span></th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr><th class="${r.color==="w"?"pw":"pb"}" title="${esc(r.player)}">${esc(r.player)}</th>${metrics.map(([key])=>`<td class="${key}">${r.counts[key]}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 
