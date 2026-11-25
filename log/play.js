@@ -369,12 +369,13 @@ function importGame(){
     const a=ex&&unpackAnal(ex.anal,hist());if(a){st.anal=a;render()}else{render();analyze()}}else{st.over=null;st.view=hist().length;render()}
 }
 
-async function evalPos(eng,fen,depth,mpv,tm){
+function evalPos(eng,fen,depth,mpv,tm){const run=()=>evalPos0(eng,fen,depth,mpv,tm),p=(eng.q||Promise.resolve()).then(run,run);eng.q=p.catch(()=>{});return p}
+async function evalPos0(eng,fen,depth,mpv,tm){
   const pos=new Chess(fen);const stm=pos.turn(),sgn=stm==="w"?1:-1;
   if(pos.isCheckmate())return {e:{mate:0,cp:stm==="w"?-100000:100000},lines:[]};
   if(pos.isDraw())return {e:{cp:0},lines:[]};
   mpv=Math.min(mpv||1,pos.moves().length);
-  eng.send("setoption name MultiPV value "+mpv);eng.send("position fen "+fen);eng.send("go depth "+depth+" movetime "+(tm||700));
+  eng.send("setoption name UCI_LimitStrength value false");eng.send("setoption name MultiPV value "+mpv);eng.send("position fen "+fen);eng.send("go depth "+depth+(tm?" movetime "+tm:""));
   const L=[];const off=eng.on(l=>{if(l.startsWith("info")&&l.includes(" score ")&&!l.includes("bound")){const k=+((l.match(/ multipv (\d+)/)||[0,1])[1]);L[k-1]=l}});
   const bl=await eng.wait(l=>l.startsWith("bestmove"));off();
   const pe=l=>{const m=l&&l.match(/score (cp|mate) (-?\d+)/);if(!m)return {cp:0};const v=+m[2];return m[1]==="mate"?{mate:v*sgn,cp:(v>0?1:-1)*sgn*100000}:{cp:v*sgn}};
@@ -409,8 +410,8 @@ let fq=Promise.resolve();
 function liveClassify(ply,fenB,fenA,mv){
   const BK=window.OPENINGS||{};if(fenA.split(" ").slice(0,4).join(" ") in BK){st.fcls[ply]="book";return}
   const tok=st.fTok;
-  fq=fq.then(async()=>{if(tok!==st.fTok)return;const eng=getAnal();await eng.ready;eng.send("setoption name UCI_LimitStrength value false");
-    const b=await evalPos(eng,fenB,20,2),a=await evalPos(eng,fenA,20,1);if(tok!==st.fTok)return;
+  fq=fq.then(async()=>{if(tok!==st.fTok)return;const eng=getAnal();await eng.ready;
+    const b=await evalPos(eng,fenB,18,2),a=await evalPos(eng,fenA,18,1);if(tok!==st.fTok)return;
     st.fcls[ply]=classifyMove({eB:b.e,eA:a.e,best:b.u,l2:b.lines[1]?b.lines[1].e:null,pvA:a.lines[0]?a.lines[0].pv:[],played:mv.from+mv.to+(mv.promotion||""),mover:mv.color,fenB,fenA,prev:st.fcls[ply-1]});
     render()}).catch(()=>{});
 }
@@ -446,7 +447,7 @@ async function explain(){
   const played=m.from+m.to+(m.promotion||""),playedIsBest=best===played,fa=fenAt(i).fen();
   EXC[key]={loading:true};renderExplain();
   try{
-    const eng=getAnal();await eng.ready;eng.send("setoption name UCI_LimitStrength value false");
+    const eng=getAnal();await eng.ready;
     const rb=await evalPos(eng,fb,20,1,1500),ra=await evalPos(eng,fa,20,1,1500);
     const pvB=(rb.lines[0]&&rb.lines[0].pv)||[],pvA=(ra.lines[0]&&ra.lines[0].pv)||[];
     const VAL={p:1,n:3,b:3,r:5,q:9,k:0},NM={p:"pawn",n:"knight",b:"bishop",r:"rook",q:"queen"};
@@ -479,13 +480,12 @@ async function analyze(){
   const h=hist();if(!h.length)return;resetVars();
   const ag=st.analGen=(st.analGen||0)+1;
   const eng=getAnal();await eng.ready;
-  eng.send("setoption name UCI_LimitStrength value false");
   const a={bestUci:[]};const n=h.length;const g=newG();const fens=[g.fen()];
   h.forEach(m=>{g.move(m.san);fens.push(g.fen())});
   for(let i=0;i<=n;i++){
     if(ag!==st.analGen)return;
     st.analyzing=`Analyzing ${i}/${n}`;renderStatus();
-    const r=await evalPos(eng,fens[i],20,2);a[i]=r.e;const u=r.u;a.l2=a.l2||[];a.pv=a.pv||[];a.l2[i]=r.lines[1]?r.lines[1].e:null;a.pv[i]=r.lines[0]?r.lines[0].pv.slice(0,1):[];
+    const r=await evalPos(eng,fens[i],18,2);a[i]=r.e;const u=r.u;a.l2=a.l2||[];a.pv=a.pv||[];a.l2[i]=r.lines[1]?r.lines[1].e:null;a.pv[i]=r.lines[0]?r.lines[0].pv.slice(0,1):[];
     if(u&&i<n)a.bestUci[i+1]=u;
   }
   buildCls(a,h);
