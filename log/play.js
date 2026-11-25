@@ -3,7 +3,7 @@ const {Chess}=window.ChessLib;
 const root=document.getElementById("play");
 if(!root)return;
 const TCS={"10+5":[600,5],"15+10":[900,10],"none":[0,0]};
-const DEF={sound:true,legal:true,evalbar:false,wood:false,badges:true};
+const DEF={sound:true,legal:true,evalbar:false,wood:false,badges:true,lines:3};
 const SET=(()=>{try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("cc_play")||"{}"))}catch(e){return {...DEF}}})();
 const saveSet=()=>{try{localStorage.setItem("cc_play",JSON.stringify(SET))}catch(e){}};
 const FILES="abcdefgh";
@@ -12,7 +12,7 @@ const st={game:new Chess(),user:"w",colorPick:"r",tc:"none",elo:1000,flip:false,
 
 root.innerHTML=`<div class="pl-left"><div class="pl-wrap" id="plWrap"><div class="pl-eval" id="plEval"><div class="w"></div><div class="v"></div></div><div class="board pl-b" id="plB"></div><div class="pl-promo" id="plPromo"></div></div>
 <div class="pl-tools"><div class="pl-tbtn"><button id="plGear" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3.3h-4l-.3 2.6a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></button><button id="plFlip" title="Flip board"><svg viewBox="0 0 24 24"><path d="M7 3 3 7h3v9h2V7h3zM17 21l4-4h-3V8h-2v9h-3z"/></svg></button></div>
-<div class="pl-pop" id="plPop"><label><span>Sound</span><input type="checkbox" id="plSound"></label><label><span>Show legal moves</span><input type="checkbox" id="plLegal"></label><label><span>Evaluation bar</span><input type="checkbox" id="plEvalOn"></label><label><span>Wood board</span><input type="checkbox" id="plWood"></label><label><span>Move icons on board</span><input type="checkbox" id="plBadges"></label></div><div class="pl-cap" id="plCapT"></div><div class="pl-cap bot" id="plCapB"></div></div></div>
+<div class="pl-pop" id="plPop"><label><span>Sound</span><input type="checkbox" id="plSound"></label><label><span>Show legal moves</span><input type="checkbox" id="plLegal"></label><label><span>Evaluation bar</span><input type="checkbox" id="plEvalOn"></label><label><span>Wood board</span><input type="checkbox" id="plWood"></label><label><span>Move icons on board</span><input type="checkbox" id="plBadges"></label><label><span>Suggested moves</span><select id="plLines"></select></label></div><div class="pl-cap" id="plCapT"></div><div class="pl-cap bot" id="plCapB"></div></div></div>
 <div class="pl-side" id="plSide">
 <div id="plSetup" class="pl-sec">
 <div class="pl-card"><div class="pl-lbl">Play as</div><div class="seg" id="plColor"><button data-v="w">White</button><button data-v="r" class="on">Random</button><button data-v="b">Black</button></div></div>
@@ -154,6 +154,15 @@ function renderMoves(){
   {const BK=window.OPENINGS||{};const g=newG();let nm="";for(const m of h){g.move(m.san);const k=g.fen().split(" ").slice(0,4).join(" ");if(BK[k])nm=BK[k]}const el=$("plOpen");el.textContent=nm;el.style.display=nm?"":"none"}
   const cur=mv.querySelector(".cur");if(cur){const r=(cur.closest(".mvr,.mvvar")||cur).getBoundingClientRect(),b=mv.getBoundingClientRect();if(r.top<b.top)mv.scrollTop-=b.top-r.top;else if(r.bottom>b.bottom)mv.scrollTop+=r.bottom-b.bottom}else if(st.cv<0&&st.view===h.length)mv.scrollTop=mv.scrollHeight;
 }
+const lineF=L=>1+.6*(L-1);
+const fmtEv=e=>!e?"":e.mate!==undefined?(e.mate===0?"#":(e.mate>0?"+M":"-M")+Math.abs(e.mate)):(e.cp>=0?"+":"")+(e.cp/100).toFixed(1);
+function candTxt(a,i){const al=a.alts&&a.alts[i-1];if(!al||!al.length)return "";const fen=fenAt(i-1).fen(),o=[];
+  for(const x of al.slice(0,SET.lines)){try{const m=new Chess(fen).move({from:x.u.slice(0,2),to:x.u.slice(2,4),promotion:x.u[4]});o.push(`<b>${m.san}</b> <span class="cev">${fmtEv(x.e)}</span>`)}catch(e){}}return o.join(" · ")}
+function tppBase(){try{return +localStorage.getItem("cc_tpp")||2000}catch(e){return 2000}}
+function updLinesOpts(){const sel=$("plLines");if(!sel)return;const n=st.phase==="game"&&hist().length?hist().length:40;
+  for(let k=1;k<=5;k++){const sec=Math.round((n+1)*tppBase()*lineF(Math.max(2,k))/1000),t=sec<60?sec+"s":Math.floor(sec/60)+"m "+String(sec%60).padStart(2,"0")+"s",txt=`${k} (~${t})`;
+    let o=sel.options[k-1];if(!o){o=new Option(txt,k);sel.add(o)}else if(o.text!==txt)o.text=txt}
+  if(+sel.value!==SET.lines)sel.value=SET.lines}
 const fmtT=ms=>{const s=ms/1000;if(s<60)return s.toFixed(1)+"s";const m=Math.floor(s/60);return m+":"+String(Math.floor(s%60)).padStart(2,"0")};
 const fmt=ms=>{ms=Math.max(0,ms);const s=ms/1000;if(s<10)return s.toFixed(1);const m=Math.floor(s/60),ss=Math.floor(s%60);return `${m}:${String(ss).padStart(2,"0")}`};
 function renderClocks(){
@@ -182,7 +191,8 @@ function renderAnal(){
   const x=n?st.view/n*W:0;
   $("plGraph").innerHTML=`<polygon class="g-area" points="0,${H} ${line} ${W},${H}"/><line class="g-mid" x1="0" y1="${H/2}" x2="${W}" y2="${H/2}"/><polyline class="g-line" points="${line}"/><line class="g-cur" x1="${x}" y1="0" x2="${x}" y2="${H}"/><line class="g-hov" id="gHov" x1="0" y1="0" x2="0" y2="${H}" style="display:none"/>`;
   const c=a.cls[st.view],bm=a.bestSan[st.view];
-  $("plBest").innerHTML=st.view>0&&(c==="book"||c==="best"||c==="bril"||c==="great")?`${badge(c)}<span class="${c}">${MARK[c][1]}</span>`:st.view>0&&c?`${badge(c)}<span class="${c}">${MARK[c][1]}</span>${bm?`, best was <b>${bm}</b>`:""}`:"";
+  {const cand=st.view>0?candTxt(a,st.view):"",top=c==="book"||c==="best"||c==="bril"||c==="great";
+  $("plBest").innerHTML=st.view>0&&c?`${badge(c)}<span class="${c}">${MARK[c][1]}</span>${cand?`${top?" · ":", best: "}${cand}`:!top&&bm?`, best was <b>${bm}</b>`:""}`:""}
   renderExplain();
   const metrics=[['bril','Brilliant'],['great','Great'],['best','Best'],['good','Good'],['inacc','Inaccuracies'],['miss','Misses'],['blun','Blunders']];
   const sides=[["White","w"],["Black","b"]];
@@ -201,7 +211,7 @@ function buildPgn(){
 }
 const loadGames=()=>{try{return JSON.parse(localStorage.getItem("cc_games")||"[]")}catch(e){return []}};
 const saveGames=a=>{a=a.slice();while(a.length){try{localStorage.setItem("cc_games",JSON.stringify(a));return}catch(e){a.pop()}}try{localStorage.setItem("cc_games","[]")}catch(e){}};let delAsk=null;
-function packAnal(a){const ev=[];for(let i=0;i<=hist().length;i++)ev.push(a[i]);return {ev,l2:a.l2,pv:a.pv,bestUci:a.bestUci||[]}}
+function packAnal(a){const ev=[];for(let i=0;i<=hist().length;i++)ev.push(a[i]);return {ev,l2:a.l2,pv:a.pv,bestUci:a.bestUci||[],alts:a.alts||[]}}
 function buildCls(a,h){
   const n=h.length,g=newG(),fens=[g.fen()];h.forEach(m=>{g.move(m.san);fens.push(g.fen())});
   a.cls=[];a.bestSan=[];
@@ -216,7 +226,7 @@ function buildCls(a,h){
 }
 function unpackAnal(r,h){
   if(!r||!r.ev||!r.l2||!r.pv)return null;
-  const a={done:true,l2:r.l2,pv:r.pv,bestUci:r.bestUci||[]};r.ev.forEach((e,i)=>a[i]=e);buildCls(a,h);return a;
+  const a={done:true,l2:r.l2,pv:r.pv,bestUci:r.bestUci||[],alts:r.alts||[]};r.ev.forEach((e,i)=>a[i]=e);buildCls(a,h);return a;
 }
 function storeGame(){const a=loadGames(),id=Date.now();a.unshift({id,date:id,user:st.user,elo:st.gameElo,tc:st.tc,res:RES(),msg:st.over,moves:hist().map(m=>m.san),times:st.times.slice()});saveGames(a);st.gid=id;renderSaved()}
 function storeImport(){
@@ -316,19 +326,19 @@ function showPromo(from,to){
   el.onclick=e=>{const b=e.target.closest("button");closePromo();if(!b){st.sel=null;render();return}tryMove(from,to,b.dataset.p)};
 }
 
+// One search at a time on the play engine: a new search starts only after the previous bestmove (e.g. from "stop") has arrived, so a stale bestmove can't be taken for the new one.
+function playSearch(eng,cmds,still){const run=async()=>{if(!still())return null;cmds.forEach(c=>eng.send(c));return eng.wait(x=>x.startsWith("bestmove"))},p=(eng.q||Promise.resolve()).then(run,run);eng.q=p.catch(()=>{});return p}
 async function maybeEngine(){
   if(st.mode!=="play"||st.over||st.game.turn()===st.user)return;
   st.thinking=true;renderStatus();
   const gen=++st.gen;const eng=getPlay();await eng.ready;
   if(gen!==st.gen)return;
-  if(st.elo>=1320){eng.send("setoption name Skill Level value 20");eng.send("setoption name UCI_LimitStrength value true");eng.send("setoption name UCI_Elo value "+st.elo)}
-  else{eng.send("setoption name UCI_LimitStrength value false");eng.send("setoption name Skill Level value "+Math.round((st.elo-1000)/100))}
-  eng.send("position fen "+st.game.fen());
+  const opts=st.elo>=1320?["setoption name Skill Level value 20","setoption name UCI_LimitStrength value true","setoption name UCI_Elo value "+st.elo]:["setoption name UCI_LimitStrength value false","setoption name Skill Level value "+Math.round((st.elo-1000)/100)];
   const [,inc]=TCS[st.tc];
   const go=st.elo<1320?"go depth "+(1+Math.round((st.elo-1000)/100)):"go movetime "+(st.tc==="none"?1000:Math.round(Math.min(2500,Math.max(300,st.clock[st.game.turn()]/40+inc*400))));
-  const minThinkMs=1000+Math.random()*2000,thinkStart=performance.now();eng.send(go);
-  const l=await eng.wait(x=>x.startsWith("bestmove"));
-  if(gen!==st.gen)return;
+  const fen=st.game.fen(),minThinkMs=1000+Math.random()*2000,thinkStart=performance.now();
+  const l=await playSearch(eng,[...opts,"position fen "+fen,go],()=>gen===st.gen);
+  if(!l||gen!==st.gen)return;
   st.thinking=false;
   const u=l.split(" ")[1];if(!u||u==="(none)"){render();return}
   {const wt=minThinkMs-(performance.now()-thinkStart);if(wt>0){st.thinking=true;await new Promise(r=>setTimeout(r,wt));if(gen!==st.gen)return;st.thinking=false}}
@@ -480,15 +490,15 @@ async function analyze(){
   const h=hist();if(!h.length)return;resetVars();
   const ag=st.analGen=(st.analGen||0)+1;
   const eng=getAnal();await eng.ready;
-  const a={bestUci:[]};const n=h.length;const g=newG();const fens=[g.fen()];
+  const a={bestUci:[],alts:[]};const n=h.length,L=Math.max(2,SET.lines),t0=performance.now();const g=newG();const fens=[g.fen()];
   h.forEach(m=>{g.move(m.san);fens.push(g.fen())});
   for(let i=0;i<=n;i++){
     if(ag!==st.analGen)return;
     st.analyzing=`Analyzing ${i}/${n}`;renderStatus();
-    const r=await evalPos(eng,fens[i],18,2);a[i]=r.e;const u=r.u;a.l2=a.l2||[];a.pv=a.pv||[];a.l2[i]=r.lines[1]?r.lines[1].e:null;a.pv[i]=r.lines[0]?r.lines[0].pv.slice(0,1):[];
+    const r=await evalPos(eng,fens[i],18,L);a[i]=r.e;a.alts[i]=r.lines.map(x=>({u:x.pv[0],e:x.e})).filter(x=>x.u);const u=r.u;a.l2=a.l2||[];a.pv=a.pv||[];a.l2[i]=r.lines[1]?r.lines[1].e:null;a.pv[i]=r.lines[0]?r.lines[0].pv.slice(0,1):[];
     if(u&&i<n)a.bestUci[i+1]=u;
   }
-  buildCls(a,h);
+  buildCls(a,h);try{localStorage.setItem("cc_tpp",String((performance.now()-t0)/(n+1)/lineF(L)))}catch(e){}
   a.done=true;st.anal=a;st.analyzing=false;if(st.gid){const L=loadGames(),r=L.find(g=>g.id===st.gid);if(r){r.anal=packAnal(a);saveGames(L)}}render();
 }
 
@@ -554,7 +564,7 @@ const pop=$("plPop");$("plGear").addEventListener("click",e=>{e.stopPropagation(
 $("plSound").checked=SET.sound;$("plLegal").checked=SET.legal;
 $("plSound").addEventListener("change",e=>{SET.sound=e.target.checked;saveSet()});
 $("plLegal").addEventListener("change",e=>{SET.legal=e.target.checked;saveSet();render()});
-$("plBadges").checked=SET.badges;$("plBadges").addEventListener("change",e=>{SET.badges=e.target.checked;saveSet();render()});$("plWood").checked=SET.wood;$("plB").classList.toggle("wood",SET.wood);$("plWood").addEventListener("change",e=>{SET.wood=e.target.checked;saveSet();$("plB").classList.toggle("wood",SET.wood)});$("plEvalOn").checked=SET.evalbar;$("plEvalOn").addEventListener("change",e=>{SET.evalbar=e.target.checked;saveSet();render()});
+$("plLines").addEventListener("change",e=>{SET.lines=+e.target.value;saveSet();render()});updLinesOpts();$("plBadges").checked=SET.badges;$("plBadges").addEventListener("change",e=>{SET.badges=e.target.checked;saveSet();render()});$("plWood").checked=SET.wood;$("plB").classList.toggle("wood",SET.wood);$("plWood").addEventListener("change",e=>{SET.wood=e.target.checked;saveSet();$("plB").classList.toggle("wood",SET.wood)});$("plEvalOn").checked=SET.evalbar;$("plEvalOn").addEventListener("change",e=>{SET.evalbar=e.target.checked;saveSet();render()});
 const rsB=$("plResign");
 const modal=$("plModal");rsB.addEventListener("click",e=>{e.stopPropagation();if(!st.over)modal.classList.toggle("on")});
 $("plMNo").addEventListener("click",()=>modal.classList.remove("on"));document.addEventListener("pointerdown",e=>{if(!e.target.closest(".pl-rsw"))modal.classList.remove("on")},true);
@@ -576,7 +586,7 @@ const fit=()=>{
 addEventListener("resize",fit);
 document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>requestAnimationFrame(fit)));
 const origRender=render;
-render=function(){origRender();requestAnimationFrame(fit)};
+render=function(){origRender();updLinesOpts();requestAnimationFrame(fit)};
 const [base]=TCS[st.tc];st.clock={w:base*1000,b:base*1000};
 render();
 })();
