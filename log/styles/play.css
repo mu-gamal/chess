@@ -204,7 +204,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin: 0 0 8px;
+  margin: 0 0 16px;
 }
 .pl-cands:empty {
   display: none;
@@ -1165,12 +1165,12 @@ html::-webkit-scrollbar-thumb:hover {
 .pl-sum-table th, .pl-sum-table td { padding: 7px 3px; border-bottom: 1px solid var(--line); box-shadow: none; position: static; }
 .pl-sum-table thead th { vertical-align: bottom; font-weight: 700; font-size: 10px; white-space: nowrap; overflow-wrap: normal; letter-spacing: -.2px; }
 .pl-sum-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pl-sum-table tr > :nth-child(2) { width: 16%; }
-.pl-sum-table tr > :nth-child(3) { width: 11%; }
-.pl-sum-table tr > :nth-child(4), .pl-sum-table tr > :nth-child(5) { width: 10%; }
-.pl-sum-table tr > :nth-child(6) { width: 22%; }
-.pl-sum-table tr > :nth-child(7) { width: 17%; }
-.pl-sum-table thead th:first-child { width: 72px; text-align: left; color: var(--muted); }
+.pl-sum-table tr > :nth-child(2) { width: 14%; }
+.pl-sum-table tr > :nth-child(3) { width: 9%; }
+.pl-sum-table tr > :nth-child(4), .pl-sum-table tr > :nth-child(5) { width: 8%; }
+.pl-sum-table tr > :nth-child(6) { width: 19%; }
+.pl-sum-table tr > :nth-child(7) { width: 14%; }
+.pl-sum-table thead th:first-child { width: 104px; text-align: left; color: var(--muted); }
 .pl-sum-table tbody th { text-align: left; font-weight: 600; padding-left: 6px; padding-right: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl-sum-table tbody td { font-weight: 700; }
 .pl-sum-table tbody tr:last-child > * { border-bottom: 0; }
@@ -1180,7 +1180,8 @@ html::-webkit-scrollbar-thumb:hover {
   .pl-sum-table { font-size: 10px; }
   .pl-sum-table thead th { font-size: 9px; }
   .pl-sum-table th, .pl-sum-table td { padding: 6px 2px; }
-  .pl-sum-table thead th:first-child { width: 58px; }
+  .pl-sum-table thead th:first-child { width: 96px; }
+  .pl-sum-table tbody th { font-size: 10px; padding-left: 4px; padding-right: 2px; }
 }
 @media(max-width:900px) {
   .play {

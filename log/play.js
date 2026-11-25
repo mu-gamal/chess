@@ -26,7 +26,7 @@ root.innerHTML=`<div class="pl-left"><div class="pl-wrap" id="plWrap"><div class
 <div class="pl-clocks" id="plClocks"><div class="pl-clock" id="plClkTop"><span class="n"></span><span class="t"></span></div><div class="pl-clock" id="plClkBot"><span class="n"></span><span class="t"></span></div></div>
 <div class="pl-top"><div class="pl-status" id="plStatus"></div><span class="pl-lvl" id="plLvl"></span><button class="pl-btn pl-ico" id="plAnalyze" title="Analyze"><svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4z"/></svg></button><button class="pl-btn" id="plCopy">Copy PGN</button><button class="pl-btn main pl-again" id="plAgainTop">New game</button><div class="pl-rsw"><button class="pl-btn" id="plResign">Resign</button><div class="pl-rpop" id="plModal"><div class="pl-mt">Resign this game?</div><div class="pl-mrow"><button class="pl-btn" id="plMNo">Cancel</button><button class="pl-btn danger" id="plMYes">Resign</button></div></div></div></div>
 <div class="pl-card pl-moves"><div class="pl-open" id="plOpen"></div><div class="pl-mv" id="plMoves"></div><div class="pl-nav"><button data-n="first" title="First"><svg viewBox="0 0 24 24"><path d="M18.4 6.4 17 5l-7 7 7 7 1.4-1.4L12.8 12zM11.4 6.4 10 5l-7 7 7 7 1.4-1.4L5.8 12z"/></svg></button><button data-n="prev" title="Previous"><svg viewBox="0 0 24 24"><path d="M15.4 6.4 14 5l-7 7 7 7 1.4-1.4L9.8 12z"/></svg></button><button data-n="next" title="Next"><svg viewBox="0 0 24 24"><path d="M8.6 17.6 10 19l7-7-7-7-1.4 1.4 5.6 5.6z"/></svg></button><button data-n="last" title="Last"><svg viewBox="0 0 24 24"><path d="M5.6 17.6 7 19l7-7-7-7-1.4 1.4 5.6 5.6zM12.6 17.6 14 19l7-7-7-7-1.4 1.4 5.6 5.6z"/></svg></button></div></div>
-<div class="pl-card pl-anal" id="plAnal"><svg id="plGraph" viewBox="0 0 300 70" preserveAspectRatio="none"></svg><div class="pl-tip" id="plTip"></div><div class="pl-move-head"><div class="pl-best" id="plBest"></div><div class="pl-exw" id="plExW"></div></div><div class="pl-cands" id="plCands"></div><div class="pl-explain-body" id="plExBody"></div><div class="pl-sum" id="plSum"></div></div>
+<div class="pl-card pl-anal" id="plAnal"><svg id="plGraph" viewBox="0 0 300 70" preserveAspectRatio="none"></svg><div class="pl-tip" id="plTip"></div><div class="pl-move-head"><div class="pl-best" id="plBest"></div><div class="pl-exw" id="plExW"></div></div><div class="pl-explain-body" id="plExBody"></div><div class="pl-cands" id="plCands"></div><div class="pl-sum" id="plSum"></div></div>
 </div>
 </div>`;
 
@@ -103,8 +103,8 @@ function arrows(list,pv){
   const one=u=>{const [x1,y1]=xy(u.slice(0,2)),[x2,y2]=xy(u.slice(2,4));const dx=x2-x1,dy=y2-y1;
     const pts=[[x1,y1]];if(Math.abs(dx)*Math.abs(dy)===2){Math.abs(dx)>Math.abs(dy)?pts.push([x2,y1]):pts.push([x1,y2])}pts.push([x2,y2]);
     const [ax,ay]=pts[pts.length-2],L=Math.hypot(x2-ax,y2-ay),ux=(x2-ax)/L,uy=(y2-ay)/L,px=-uy,py=ux;
-    const [sx,sy]=pts[1],L0=Math.hypot(sx-x1,sy-y1);pts[0]=[x1+(sx-x1)/L0*.3,y1+(sy-y1)/L0*.3];
-    const hl=pv?.34:.42,hh=pv?.19:.26,bx=x2-ux*hl,by=y2-uy*hl;pts[pts.length-1]=[bx+ux*.02,by+uy*.02];
+    const [sx,sy]=pts[1],L0=Math.hypot(sx-x1,sy-y1);pts[0]=[x1+(sx-x1)/L0*.42,y1+(sy-y1)/L0*.42];
+    const hl=pv?.38:.42,hh=pv?.23:.26,bx=x2-ux*hl,by=y2-uy*hl;pts[pts.length-1]=[bx+ux*.02,by+uy*.02];
     const f=v=>v.toFixed(3);
     return `<g><polyline points="${pts.map(p=>p.map(f).join(",")).join(" ")}"/><polygon points="${f(bx+px*hh)},${f(by+py*hh)} ${f(x2)},${f(y2)} ${f(bx-px*hh)},${f(by-py*hh)}"/></g>`};
   return `<svg class="pl-arrow${pv?" pv":""}" viewBox="0 0 8 8">${list.map(one).join("")}</svg>`;
