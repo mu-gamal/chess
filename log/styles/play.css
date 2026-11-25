@@ -478,6 +478,13 @@ html.pl-grabbing,html.pl-grabbing * {
   vertical-align: middle;
   margin-right: 6px;
 }
+.eav.emo {
+  font-size: 14px;
+  line-height: 1;
+}
+.pl-gi .gm .eav.emo {
+  font-size: 11px;
+}
 .eav img {
   width: 80%;
   height: 80%;

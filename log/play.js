@@ -3,7 +3,7 @@ const {Chess}=window.ChessLib;
 const root=document.getElementById("play");
 if(!root)return;
 const TCS={"10+5":[600,5],"15+10":[900,10],"none":[0,0]};
-const DEF={sound:true,legal:true,evalbar:false,wood:false,badges:true,lines:3};
+const DEF={sound:true,legal:true,evalbar:false,wood:false,badges:true,lines:3,icons:"pieces"};
 const SET=(()=>{try{return Object.assign({},DEF,JSON.parse(localStorage.getItem("cc_play")||"{}"))}catch(e){return {...DEF}}})();
 const saveSet=()=>{try{localStorage.setItem("cc_play",JSON.stringify(SET))}catch(e){}};
 const FILES="abcdefgh";
@@ -12,7 +12,7 @@ const st={game:new Chess(),user:"w",colorPick:"r",tc:"none",elo:1000,flip:false,
 
 root.innerHTML=`<div class="pl-left"><div class="pl-wrap" id="plWrap"><div class="pl-eval" id="plEval"><div class="w"></div><div class="v"></div></div><div class="board pl-b" id="plB"></div><div class="pl-promo" id="plPromo"></div></div>
 <div class="pl-tools"><div class="pl-tbtn"><button id="plGear" title="Settings"><svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3.3h-4l-.3 2.6a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.6 7.6 0 0 0 1.7 1l.3 2.6h4l.3-2.6a7.6 7.6 0 0 0 1.7-1l2.5 1 2-3.5zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg></button><button id="plFlip" title="Flip board"><svg viewBox="0 0 24 24"><path d="M7 3 3 7h3v9h2V7h3zM17 21l4-4h-3V8h-2v9h-3z"/></svg></button></div>
-<div class="pl-pop" id="plPop"><label><span>Sound</span><input type="checkbox" id="plSound"></label><label><span>Show legal moves</span><input type="checkbox" id="plLegal"></label><label><span>Evaluation bar</span><input type="checkbox" id="plEvalOn"></label><label><span>Wood board</span><input type="checkbox" id="plWood"></label><label><span>Move icons on board</span><input type="checkbox" id="plBadges"></label><label><span>Suggested moves</span><select id="plLines"></select></label></div><div class="pl-cap" id="plCapT"></div><div class="pl-cap bot" id="plCapB"></div></div></div>
+<div class="pl-pop" id="plPop"><label><span>Sound</span><input type="checkbox" id="plSound"></label><label><span>Show legal moves</span><input type="checkbox" id="plLegal"></label><label><span>Evaluation bar</span><input type="checkbox" id="plEvalOn"></label><label><span>Wood board</span><input type="checkbox" id="plWood"></label><label><span>Move icons on board</span><input type="checkbox" id="plBadges"></label><label><span>Suggested moves</span><select id="plLines"></select></label><label><span>Level icons</span><select id="plIcons"><option value="pieces">Pieces</option><option value="emoji">Emoji</option></select></label></div><div class="pl-cap" id="plCapT"></div><div class="pl-cap bot" id="plCapB"></div></div></div>
 <div class="pl-side" id="plSide">
 <div id="plSetup" class="pl-sec">
 <div class="pl-card"><div class="pl-lbl">Play as</div><div class="seg" id="plColor"><button data-v="w">White</button><button data-v="r" class="on">Random</button><button data-v="b">Black</button></div></div>
@@ -244,8 +244,8 @@ function storeImport(){
 function setLastWin(){const g=loadGames().filter(g=>!g.kind&&g.elo&&g.res===(g.user==="w"?"1-0":"0-1")).sort((a,b)=>b.elo-a.elo)[0],e=g?Math.min(3100,g.elo+100):1000;st.elo=e;$("plStr").value=e;$("plElo").textContent=e;updAv();$("plLw").textContent=g?`Best win: ${g.elo}`:""}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 const vsH=(w,b)=>`<span class="pw">${esc(w)}</span> vs <span class="pb">${esc(b)}</span>`;
-const tier=e=>e<1400?{n:"Rookie",p:"P",c:"#5a9e4b"}:e<1800?{n:"Intermediate",p:"N",c:"#3f7fc4"}:e<2300?{n:"Advanced",p:"R",c:"#8a5cc7"}:{n:"Beast",p:"Q",c:"#d0453a"};
-const eAv=e=>{const t=tier(e);return `<span class="eav" style="background:${t.c}" title="${t.n}"><img src="${PIECES[t.p]}" alt=""></span>`};
+const tier=e=>e<1400?{n:"Rookie",p:"P",e:"🙂",c:"#5a9e4b"}:e<1800?{n:"Intermediate",p:"N",e:"😄",c:"#3f7fc4"}:e<2300?{n:"Advanced",p:"R",e:"😏",c:"#8a5cc7"}:{n:"Beast",p:"Q",e:"😈",c:"#d0453a"};
+const eAv=e=>{const t=tier(e);return SET.icons==="emoji"?`<span class="eav emo" style="background:${t.c}" title="${t.n}">${t.e}</span>`:`<span class="eav" style="background:${t.c}" title="${t.n}"><img src="${PIECES[t.p]}" alt=""></span>`};
 function updAv(){const e=st.elo;$("plAv").innerHTML=`${eAv(e)}<span class="eavn">${tier(e).n}</span>`}
 function renderSaved(){
   const a=loadGames(),box=$("plSaved");box.style.display=a.length?"":"none";if(!a.length)return;
@@ -579,7 +579,7 @@ const pop=$("plPop");$("plGear").addEventListener("click",e=>{e.stopPropagation(
 $("plSound").checked=SET.sound;$("plLegal").checked=SET.legal;
 $("plSound").addEventListener("change",e=>{SET.sound=e.target.checked;saveSet()});
 $("plLegal").addEventListener("change",e=>{SET.legal=e.target.checked;saveSet();render()});
-$("plLines").addEventListener("change",e=>{SET.lines=+e.target.value;saveSet();render()});updLinesOpts();$("plBadges").checked=SET.badges;$("plBadges").addEventListener("change",e=>{SET.badges=e.target.checked;saveSet();render()});$("plWood").checked=SET.wood;$("plB").classList.toggle("wood",SET.wood);$("plWood").addEventListener("change",e=>{SET.wood=e.target.checked;saveSet();$("plB").classList.toggle("wood",SET.wood)});$("plEvalOn").checked=SET.evalbar;$("plEvalOn").addEventListener("change",e=>{SET.evalbar=e.target.checked;saveSet();render()});
+$("plIcons").value=SET.icons;$("plIcons").addEventListener("change",e=>{SET.icons=e.target.value;saveSet();updAv();renderSaved();render()});$("plLines").addEventListener("change",e=>{SET.lines=+e.target.value;saveSet();render()});updLinesOpts();$("plBadges").checked=SET.badges;$("plBadges").addEventListener("change",e=>{SET.badges=e.target.checked;saveSet();render()});$("plWood").checked=SET.wood;$("plB").classList.toggle("wood",SET.wood);$("plWood").addEventListener("change",e=>{SET.wood=e.target.checked;saveSet();$("plB").classList.toggle("wood",SET.wood)});$("plEvalOn").checked=SET.evalbar;$("plEvalOn").addEventListener("change",e=>{SET.evalbar=e.target.checked;saveSet();render()});
 const rsB=$("plResign");
 const modal=$("plModal");rsB.addEventListener("click",e=>{e.stopPropagation();if(!st.over)modal.classList.toggle("on")});
 $("plMNo").addEventListener("click",()=>modal.classList.remove("on"));document.addEventListener("pointerdown",e=>{if(!e.target.closest(".pl-rsw"))modal.classList.remove("on")},true);
