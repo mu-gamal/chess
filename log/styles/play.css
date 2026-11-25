@@ -175,6 +175,8 @@
   border-radius: 12px;
   padding: 10px 14px;
   min-width: 210px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
   box-shadow: 0 10px 30px rgba(0,0,0,.35);
 }
 .pl-pop.on {
@@ -188,6 +190,7 @@
   padding: 6px 0;
   font-size: 14px;
   cursor: pointer;
+  white-space: nowrap;
 }
 .pl-pop select {
   background: var(--card);
@@ -197,9 +200,47 @@
   padding: 3px 6px;
   font-size: 13px;
 }
-.cev {
-  opacity: .7;
+.pl-cands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+.pl-cands:empty {
+  display: none;
+}
+.cand {
+  flex: 1 1 0;
+  min-width: 88px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cand:hover {
+  background: rgba(255,255,255,.08);
+}
+.cand .cev {
+  background: #fff;
+  color: #262626;
+  font-weight: 700;
   font-size: 12px;
+  padding: 3px 6px;
+  border-radius: 6px;
+}
+.cand .csan {
+  font-weight: 700;
+  font-size: 12px;
+}
+.cand .fig {
+  margin-right: 2px;
 }
 .pl-pop input {
   accent-color: var(--accent);
@@ -704,9 +745,6 @@ html::-webkit-scrollbar-thumb:hover {
 .t-inacc .mvx {
   color: #f7c631;
 }
-.t-miss .mvx {
-  color: #ff7769;
-}
 .t-blun .mvx {
   color: #fa5a47;
 }
@@ -1127,10 +1165,11 @@ html::-webkit-scrollbar-thumb:hover {
 .pl-sum-table th, .pl-sum-table td { padding: 7px 3px; border-bottom: 1px solid var(--line); box-shadow: none; position: static; }
 .pl-sum-table thead th { vertical-align: bottom; font-weight: 700; font-size: 10px; white-space: nowrap; overflow-wrap: normal; letter-spacing: -.2px; }
 .pl-sum-label { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.pl-sum-table tr > :nth-child(3), .pl-sum-table tr > :nth-child(5), .pl-sum-table tr > :nth-child(7) { width: 10%; }
-.pl-sum-table tr > :nth-child(2) { width: 12%; }
-.pl-sum-table tr > :nth-child(4) { width: 8%; }
-.pl-sum-table tr > :nth-child(6) { width: 17%; }
+.pl-sum-table tr > :nth-child(2) { width: 16%; }
+.pl-sum-table tr > :nth-child(3) { width: 11%; }
+.pl-sum-table tr > :nth-child(4), .pl-sum-table tr > :nth-child(5) { width: 10%; }
+.pl-sum-table tr > :nth-child(6) { width: 22%; }
+.pl-sum-table tr > :nth-child(7) { width: 17%; }
 .pl-sum-table thead th:first-child { width: 72px; text-align: left; color: var(--muted); }
 .pl-sum-table tbody th { text-align: left; font-weight: 600; padding-left: 6px; padding-right: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pl-sum-table tbody td { font-weight: 700; }
@@ -1193,9 +1232,6 @@ html::-webkit-scrollbar-thumb:hover {
 .good {
   color: #9bb0a0;
 }
-.miss {
-  color: #e07a7a;
-}
 .cb {
   display: inline-flex;
   align-items: center;
@@ -1228,9 +1264,6 @@ html::-webkit-scrollbar-thumb:hover {
 }
 .cb-inacc {
   background: #f7c631;
-}
-.cb-miss {
-  background: #ff7769;
 }
 .cb-blun {
   background: #fa412d;

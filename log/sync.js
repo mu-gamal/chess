@@ -11,7 +11,7 @@ function local(){const data={},m=meta();KEYS.forEach(k=>{const v=get(k);if(v!==n
 function merge(a,b){
   const out={data:{},ts:{}};
   const del=[...new Set([...(J(a.data.cc_games_del)||[]),...(J(b.data.cc_games_del)||[])])];
-  const g=new Map();[...(J(b.data.cc_games)||[]),...(J(a.data.cc_games)||[])].forEach(x=>{const o=g.get(x.id),raw=y=>!!(y&&y.anal&&y.anal.l2);if(!o||(!o.anal&&x.anal)||(!raw(o)&&raw(x)))g.set(x.id,x)});
+  const g=new Map();[...(J(b.data.cc_games)||[]),...(J(a.data.cc_games)||[])].forEach(x=>{const o=g.get(x.id),raw=y=>!!(y&&y.anal&&y.anal.l2);if(!o||(!o.anal&&x.anal)||(!raw(o)&&raw(x))||(o.anal&&x.anal&&(x.anal.at||0)>(o.anal.at||0)))g.set(x.id,x)});
   const games=[...g.values()].filter(x=>!del.includes(x.id)).sort((x,y)=>y.id-x.id);
   if(games.length||a.data.cc_games!==undefined||b.data.cc_games!==undefined)out.data.cc_games=JSON.stringify(games);
   if(del.length)out.data.cc_games_del=JSON.stringify(del);
