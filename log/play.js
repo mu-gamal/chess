@@ -397,6 +397,14 @@ async function evalPos0(eng,fen,depth,mpv,tm){
   const lines=L.filter(Boolean).map(l=>({e:pe(l),pv:((l.match(/ pv (.*)$/)||[0,""])[1]).split(" ").filter(Boolean)}));
   const u=bl.split(" ")[1];return {e:lines[0]?lines[0].e:{cp:0},u:u&&u!=="(none)"?u:null,lines};
 }
+// Best net material the side to move can win by capturing on `sq` (recaptures included, least valuable attacker first); >=0 since it may decline.
+function seeGain(g,sq,VAL){
+  const KV={...VAL,k:100},caps=g.moves({verbose:true}).filter(m=>m.to===sq&&m.captured);
+  if(!caps.length)return 0;
+  caps.sort((a,b)=>KV[a.piece]-KV[b.piece]);const m=caps[0];
+  g.move({from:m.from,to:m.to,promotion:m.promotion});const gain=VAL[m.captured]-seeGain(g,sq,VAL);g.undo();
+  return Math.max(0,gain);
+}
 function hasSoundMaterialSacrifice(fenB,fenA,pv,played){
   const VAL={p:1,n:3,b:3,r:5,q:9,k:0};
   try{const mv=new Chess(fenB).move({from:played.slice(0,2),to:played.slice(2,4),promotion:played[4]});
@@ -404,6 +412,7 @@ function hasSoundMaterialSacrifice(fenB,fenA,pv,played){
     if(VAL[mv.piece]-(mv.captured?VAL[mv.captured]:0)<2)return false;
     const caps=new Chess(fenA).moves({verbose:true}).filter(m=>m.to===mv.to&&m.captured);
     if(!caps.length)return false;
+    if(seeGain(new Chess(fenA),mv.to,VAL)-(mv.captured?VAL[mv.captured]:0)<2)return false;
     const first=(pv||[])[0];return !caps.some(m=>m.from+m.to+(m.promotion||"")===first);
   }catch(e){return false}
 }
