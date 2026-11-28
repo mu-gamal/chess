@@ -363,9 +363,9 @@ function newGame(){
 }
 function importGame(){
   const raw=$("plImp").value,err=$("plImpErr");const hd={};raw.replace(/\[(\w+)\s+"([^"]*)"\]/g,(_,k,v)=>{hd[k]=v});
-  const sv=raw.replace(/^\s*\[\w+\s+"[^"]*"\]\s*$/gm," ").trim();let g,mode;
+  let sv=raw.replace(/^\s*\[\w+\s+"[^"]*"\]\s*$/gm," ").trim();let g,mode;
+  if(!sv)sv=hd.FEN||STD;
   try{
-    if(!sv&&!hd.FEN)throw new Error("Paste a PGN or FEN");
     if(/^[1-8pnbrqkPNBRQK]+(\/[1-8pnbrqkPNBRQK]+){7}\s/.test(sv+" ")){try{g=new Chess(sv)}catch(e){throw new Error("Invalid FEN")}st.startFen=g.fen();mode="fen"}
     else{try{g=new Chess(hd.FEN||STD)}catch(e){throw new Error("Invalid FEN header")}st.startFen=g.fen();mode="pgn";
       let s2=sv;while(/\([^()]*\)/.test(s2))s2=s2.replace(/\([^()]*\)/g," ");
